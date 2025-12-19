@@ -224,10 +224,10 @@ export function ChatInterface() {
                           </div>
                           <div className="rounded-xl overflow-hidden border border-white/10">
                             <div className="bg-slate-800/50 px-4 py-2 flex items-center justify-between border-b border-white/10">
-                              <span className="text-xs text-slate-400 font-mono">{part.language}</span>
+                              <span className="text-xs text-slate-400 font-mono">{part.type === 'code' && 'language' in part ? part.language : 'text'}</span>
                             </div>
                             <SyntaxHighlighter
-                              language={part.language}
+                              language={part.type === 'code' && 'language' in part ? part.language : 'text'}
                               style={vscDarkPlus}
                               customStyle={{
                                 margin: 0,
