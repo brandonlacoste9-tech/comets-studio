@@ -1,13 +1,5 @@
 import React from 'react'
 import {
-  CodeProjectPart,
-  CodeBlock,
-  MathPart,
-  ThinkingSectionProps,
-  TaskSectionProps,
-  CodeProjectPartProps,
-} from '@v0-sdk/react'
-import {
   Reasoning,
   ReasoningTrigger,
   ReasoningContent,
@@ -20,6 +12,38 @@ import {
   TaskItemFile,
 } from '@/components/ai-elements/task'
 
+// Type definitions replacing @v0-sdk/react imports
+export interface ThinkingSectionProps {
+  title?: string
+  duration?: number
+  thought?: string
+  collapsed?: boolean
+  onCollapse?: () => void
+  children?: React.ReactNode
+  [key: string]: any
+}
+
+export interface TaskSectionProps {
+  title?: string
+  type?: string
+  parts?: any[]
+  collapsed?: boolean
+  onCollapse?: () => void
+  children?: React.ReactNode
+  [key: string]: any
+}
+
+export interface CodeProjectPartProps {
+  title?: string
+  filename?: string
+  code?: string
+  language?: string
+  collapsed?: boolean
+  className?: string
+  children?: React.ReactNode
+  [key: string]: any
+}
+
 // Wrapper component to adapt AI Elements Reasoning to @v0-sdk/react ThinkingSection
 export const ThinkingSectionWrapper = ({
   title,
@@ -28,17 +52,13 @@ export const ThinkingSectionWrapper = ({
   collapsed,
   onCollapse,
   children,
-  brainIcon,
-  chevronRightIcon,
-  chevronDownIcon,
-  iconRenderer,
   ...props
 }: ThinkingSectionProps) => {
   return (
     <Reasoning
       duration={duration ? Math.round(duration) : duration}
       defaultOpen={!collapsed}
-      onOpenChange={(open) => onCollapse?.()}
+      onOpenChange={() => onCollapse?.()}
       {...props}
     >
       <ReasoningTrigger title={title || 'Thinking'} />
@@ -60,17 +80,13 @@ export const TaskSectionWrapper = ({
   collapsed,
   onCollapse,
   children,
-  taskIcon,
-  chevronRightIcon,
-  chevronDownIcon,
-  iconRenderer,
   ...props
 }: TaskSectionProps) => {
   return (
     <Task
       className="w-full mb-4"
       defaultOpen={!collapsed}
-      onOpenChange={(open) => onCollapse?.()}
+      onOpenChange={() => onCollapse?.()}
     >
       <TaskTrigger title={title || type || 'Task'} />
       <TaskContent>
@@ -119,7 +135,8 @@ export const TaskSectionWrapper = ({
               if (partObj.type === 'reading-file' && partObj.filePath) {
                 return (
                   <TaskItem key={index}>
-                    Reading file <TaskItemFile>{partObj.filePath}</TaskItemFile>
+                    Reading file{' '}
+                    <TaskItemFile>{partObj.filePath}</TaskItemFile>
                   </TaskItem>
                 )
               }
@@ -342,7 +359,6 @@ export const CodeProjectPartWrapper = ({
   collapsed,
   className,
   children,
-  iconRenderer,
   ...props
 }: CodeProjectPartProps) => {
   const [isCollapsed, setIsCollapsed] = React.useState(collapsed ?? true)
@@ -375,7 +391,9 @@ export const CodeProjectPartWrapper = ({
             v1
           </span>
           <svg
-            className={`w-4 h-4 text-gray-400 transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
+            className={`w-4 h-4 text-gray-400 transition-transform ${
+              isCollapsed ? '' : 'rotate-90'
+            }`}
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -418,7 +436,6 @@ export const CodeProjectPartWrapper = ({
   )
 }
 
-// Shared components object that can be used by both StreamingMessage and MessageRenderer
 // Custom TaskSection that handles code projects properly
 const CustomTaskSectionWrapper = (props: any) => {
   // If this task contains code project parts, render as CodeProjectPart instead
@@ -522,13 +539,26 @@ const CustomTaskSectionWrapper = (props: any) => {
   return <TaskSectionWrapper {...props} />
 }
 
+// Shared components object that works with native AI Elements
 export const sharedComponents = {
   // AI Elements components for structured content
   ThinkingSection: ThinkingSectionWrapper,
   TaskSection: CustomTaskSectionWrapper,
   CodeProjectPart: CodeProjectPartWrapper,
-  CodeBlock,
-  MathPart,
+  CodeBlock: ({ language, code }: any) => (
+    <pre className="mb-4 overflow-x-auto rounded-lg bg-gray-100 dark:bg-gray-800 p-4">
+      <code className="font-mono text-sm text-gray-900 dark:text-gray-100">
+        {code || ''}
+      </code>
+    </pre>
+  ),
+  MathPart: ({ math }: any) => (
+    <div className="mb-4 overflow-x-auto rounded-lg bg-gray-100 dark:bg-gray-800 p-4">
+      <code className="font-mono text-sm text-gray-900 dark:text-gray-100">
+        {math || ''}
+      </code>
+    </div>
+  ),
 
   // Styled HTML elements for the v0 clone theme
   p: {
