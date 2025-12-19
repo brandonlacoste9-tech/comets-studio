@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from 'v0-sdk'
 import { auth } from '@/app/(auth)/auth'
 import { getChatIdsByUserId } from '@/lib/db/queries'
-
-// Create v0 client with custom baseUrl if V0_API_URL is set
-const v0 = createClient(
-  process.env.V0_API_URL ? { baseUrl: process.env.V0_API_URL } : {},
-)
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,17 +15,14 @@ export async function GET(request: NextRequest) {
 
     // Get user's chat IDs from our ownership mapping
     const userChatIds = await getChatIdsByUserId({ userId: session.user.id })
-
+    
     if (userChatIds.length === 0) {
       return NextResponse.json({ data: [] })
     }
 
-    // Fetch actual chat data from v0 API
-    const allChats = await v0.chats.find()
-
-    // Filter to only include chats owned by this user
-    const userChats =
-      allChats.data?.filter((chat) => userChatIds.includes(chat.id)) || []
+    // TODO: Implement chat data fetching from database
+    // For now, return chat IDs only (DeepSeek doesn't have a chats API like v0)
+    const userChats = userChatIds.map((id) => ({ id, title: 'Chat' }))
 
     console.log('Chats fetched successfully:', userChats.length, 'chats')
 
