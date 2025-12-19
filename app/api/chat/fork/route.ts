@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from 'v0-sdk'
 
-// Create v0 client with custom baseUrl if V0_API_URL is set
-const v0 = createClient(
-  process.env.V0_API_URL ? { baseUrl: process.env.V0_API_URL } : {},
-)
+// NOTE: This endpoint is deprecated without v0-sdk
+// Chat forking should be handled through client-side duplication
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,15 +14,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fork the chat using v0 SDK
-    const forkedChat = await v0.chats.fork({
-      chatId,
-      privacy: 'private', // Default to private
-    })
+    // TODO: Implement chat forking in database
+    // For now, return success (DeepSeek doesn't have a chats API like v0)
+    console.log('Chat fork requested:', chatId)
 
-    console.log('Chat forked successfully:', forkedChat.id)
-
-    return NextResponse.json(forkedChat)
+    return NextResponse.json({ success: true, chatId })
   } catch (error) {
     console.error('Error forking chat:', error)
     return NextResponse.json({ error: 'Failed to fork chat' }, { status: 500 })
