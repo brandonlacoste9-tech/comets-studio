@@ -301,7 +301,7 @@ export class GitHubService {
       
       return data.map(deployment => ({
         id: deployment.id.toString(),
-        state: deployment.payload?.state || 'pending',
+        state: (typeof deployment.payload === 'object' && deployment.payload !== null && 'state' in deployment.payload ? deployment.payload.state : 'pending') as 'pending' | 'success' | 'failure',
         url: deployment.url,
         environment: deployment.environment,
       }));
