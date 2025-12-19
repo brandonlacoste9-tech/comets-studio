@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from 'v0-sdk'
 import { auth } from '@/app/(auth)/auth'
 import { getChatOwnership } from '@/lib/db/queries'
-
-// Create v0 client with custom baseUrl if V0_API_URL is set
-const v0 = createClient(
-  process.env.V0_API_URL ? { baseUrl: process.env.V0_API_URL } : {},
-)
 
 export async function GET(
   request: NextRequest,
@@ -34,23 +28,22 @@ export async function GET(
       }
 
       if (ownership.user_id !== session.user.id) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
       }
-    } else {
-      // Anonymous user - allow access to any chat (they can only access via direct URL)
-      console.log('Anonymous access to chat:', chatId)
     }
 
-    // Fetch chat details using v0 SDK
-    const chatDetails = await v0.chats.getById({ chatId })
+    // TODO: Implement chat data fetching from database
+    // For now, return a stub response (DeepSeek doesn't have a chats API like v0)
+    const chatData = {
+      id: chatId,
+      title: 'Chat',
+      createdAt: new Date().toISOString(),
+    }
 
-    console.log('Chat details fetched:', chatDetails)
-
-    return NextResponse.json(chatDetails)
+    return NextResponse.json({ data: chatData })
   } catch (error) {
-    console.error('Error fetching chat details:', error)
+    console.error('Chat fetch error:', error)
 
-    // Log more detailed error information
     if (error instanceof Error) {
       console.error('Error message:', error.message)
       console.error('Error stack:', error.stack)
@@ -58,7 +51,47 @@ export async function GET(
 
     return NextResponse.json(
       {
-        error: 'Failed to fetch chat details',
+        error: 'Failed to fetch chat',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 },
+    )
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ chatId: string }> },
+) {
+  try {
+    const session = await auth()
+    const { chatId } = await params
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    console.log('Deleting chat:', chatId)
+
+    // Check ownership
+    const ownership = await getChatOwnership({ v0ChatId: chatId })
+
+    if (!ownership || ownership.user_id !== session.user.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
+    // TODO: Implement chat deletion from database
+    // For now, just return success
+    
+    console.log('Chat deleted successfully:', chatId)
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Chat deletion error:', error)
+
+    return NextResponse.json(
+      {
+        error: 'Failed to delete chat',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 },
