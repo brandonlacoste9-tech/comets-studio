@@ -94,7 +94,7 @@ export function CodePlayground({
           showInlineErrors: true,
           wrapContent: true,
           editorHeight: isFullscreen ? '85vh' : '500px',
-          layout: showPreview ? 'preview' : 'code',
+          layout: showPreview ? 'preview' : undefined,
         }}
         customSetup={{
           dependencies: {
