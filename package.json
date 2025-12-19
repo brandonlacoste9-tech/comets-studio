@@ -23,7 +23,6 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
-    "@v0-sdk/react": "workspace:*",
     "@vercel/postgres": "^0.10.0",
     "ai": "^5.0.22",
     "bcrypt-ts": "^7.1.0",
@@ -47,8 +46,7 @@
     "tailwind-merge": "^2.5.5",
     "tsx": "^4.19.2",
     "use-stick-to-bottom": "^1.1.1",
-    "v0-sdk": "workspace:*",
-    "zod": "^4.1.1"
+    "openai": "^4.77.0",    "zod": "^4.1.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
