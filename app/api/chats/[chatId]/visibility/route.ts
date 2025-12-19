@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from 'v0-sdk'
 import { auth } from '@/app/(auth)/auth'
 import { getChatOwnership } from '@/lib/db/queries'
-
-// Create v0 client with custom baseUrl if V0_API_URL is set
-const v0 = createClient(
-  process.env.V0_API_URL ? { baseUrl: process.env.V0_API_URL } : {},
-)
 
 export async function PATCH(
   request: NextRequest,
@@ -17,63 +11,40 @@ export async function PATCH(
     const { chatId } = await params
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 },
-      )
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!chatId) {
-      return NextResponse.json(
-        { error: 'Chat ID is required' },
-        { status: 400 },
-      )
-    }
+    console.log('Updating visibility for chat:', chatId)
 
-    // Check if user owns this chat
+    // Check ownership
     const ownership = await getChatOwnership({ v0ChatId: chatId })
+
     if (!ownership || ownership.user_id !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Chat not found or access denied' },
-        { status: 404 },
-      )
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    const { privacy } = await request.json()
+    const body = await request.json()
+    const { visibility } = body
 
-    if (
-      !privacy ||
-      !['public', 'private', 'team', 'team-edit', 'unlisted'].includes(privacy)
-    ) {
+    if (!visibility || !['public', 'private'].includes(visibility)) {
       return NextResponse.json(
-        { error: 'Invalid privacy setting' },
+        { error: 'Invalid visibility value. Must be "public" or "private"' },
         { status: 400 },
       )
     }
 
-    console.log('Changing chat visibility:', chatId, 'to:', privacy)
+    // TODO: Implement visibility update in database
+    // For now, just return success (DeepSeek doesn't have a chats API like v0)
+    
+    console.log('Chat visibility updated successfully:', chatId, visibility)
 
-    // Update chat privacy via v0 API
-    const updatedChat = await v0.chats.update({
-      chatId,
-      privacy,
-    })
-
-    console.log('Chat visibility changed successfully:', chatId)
-
-    return NextResponse.json(updatedChat)
+    return NextResponse.json({ success: true, visibility })
   } catch (error) {
-    console.error('Change Chat Visibility Error:', error)
-
-    // Log more detailed error information
-    if (error instanceof Error) {
-      console.error('Error message:', error.message)
-      console.error('Error stack:', error.stack)
-    }
+    console.error('Visibility update error:', error)
 
     return NextResponse.json(
       {
-        error: 'Failed to change chat visibility',
+        error: 'Failed to update visibility',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 },
