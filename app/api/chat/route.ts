@@ -13,10 +13,6 @@ import {
 } from '@/lib/entitlements'
 import { ChatSDKError } from '@/lib/errors'
 
-const deepseek = new OpenAI({
-  baseURL: 'https://api.deepseek.com',
-  apiKey: process.env.DEEPSEEK_API_KEY,
-})
 
 function getClientIP(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for')
@@ -28,6 +24,12 @@ function getClientIP(request: NextRequest): string {
 
 export async function POST(request: NextRequest) {
   try {
+        // Initialize DeepSeek client
+    const deepseek = new OpenAI({
+      baseURL: 'https://api.deepseek.com',
+      apiKey: process.env.DEEPSEEK_API_KEY || 'placeholder',
+    })
+
     const session = await auth()
     const { message, chatId, streaming } = await request.json()
     if (!message) {
