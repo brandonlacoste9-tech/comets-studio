@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { aiService, AIMessage, AIProvider } from '../ai-service';
-import { extractReactCode } from '../code-parser';
+import { extractCodeBlocks } from '../code-parser';
 
 export interface ChatMessage {
   id: string;
@@ -212,7 +212,7 @@ export const useChatStore = create<ChatStore>()(
             }
 
             // Extract code blocks
-            const codeBlocks = extractReactCode(fullResponse);
+          const codeBlocks = extractCodeBlocks(fullResponse).map(block => block.code);
 
             // Finalize message
             set((state) => ({
@@ -284,7 +284,7 @@ export const useChatStore = create<ChatStore>()(
         extractCodeFromMessage: (messageId) => {
           const message = get().currentSession?.messages.find((m) => m.id === messageId);
           if (message && message.content) {
-            const codeBlocks = extractReactCode(message.content);
+            const codeBlocks = extractCodeBlocks(message.content).map(block => block.code);
             set((state) => ({
               currentSession: {
                 ...state.currentSession!,
