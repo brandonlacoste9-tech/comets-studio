@@ -1,6 +1,6 @@
 import React from 'react'
-import { Message, MessageBinaryFormat } from '@v0-sdk/react'
-import { sharedComponents } from './shared-components'
+
+type MessageBinaryFormat = Array<[number, ...any[]]> | string
 
 // Function to preprocess message content and remove V0_FILE markers and shell placeholders
 function preprocessMessageContent(
@@ -12,7 +12,7 @@ function preprocessMessageContent(
     if (!Array.isArray(row)) return row
 
     // Process text content to remove V0_FILE markers and shell placeholders
-    return row.map((item, index) => {
+    return row.map((item) => {
       if (typeof item === 'string') {
         // Remove V0_FILE markers with various patterns
         let processed = item.replace(/\[V0_FILE\][^:]*:file="[^"]*"\n?/g, '')
@@ -20,7 +20,7 @@ function preprocessMessageContent(
 
         // Remove shell placeholders with various patterns
         processed = processed.replace(/\.\.\. shell \.\.\./g, '')
-        processed = processed.replace(/\.\.\.\s*shell\s*\.\.\./g, '')
+        processed = processed.replace(/\.\.\.\.\s*shell\s*\.\.\./g, '')
 
         // Remove empty lines that might be left behind
         processed = processed.replace(/\n\s*\n\s*\n/g, '\n\n')
@@ -36,7 +36,7 @@ function preprocessMessageContent(
         return processed
       }
       return item
-    }) as [number, ...any[]] // Type assertion to match MessageBinaryFormat structure
+    }) as [number, ...any[]]
   })
 }
 
@@ -64,17 +64,36 @@ export function MessageRenderer({
     )
   }
 
-  // If content is MessageBinaryFormat (from v0 API), use the Message component
+  // If content is MessageBinaryFormat (binary array data), render as formatted content
   // Preprocess content to remove V0_FILE markers and shell placeholders
   const processedContent = preprocessMessageContent(content)
 
+  // Render formatted content
   return (
-    <Message
-      content={processedContent}
-      messageId={messageId}
-      role={role}
-      className={className}
-      components={sharedComponents}
-    />
+    <div className={`${className || ''} text-gray-700 dark:text-gray-200`}>
+      {Array.isArray(processedContent) ? (
+        processedContent.map((row, rowIndex) => {
+          if (Array.isArray(row)) {
+            return (
+              <div key={rowIndex} className="mb-2">
+                {row.map((item, itemIndex) => {
+                  if (typeof item === 'string') {
+                    return (
+                      <span key={itemIndex} className="leading-relaxed">
+                        {item}
+                      </span>
+                    )
+                  }
+                  return null
+                })}
+              </div>
+            )
+          }
+          return null
+        })
+      ) : (
+        <p className="leading-relaxed">{String(processedContent)}</p>
+      )}
+    </div>
   )
 }
