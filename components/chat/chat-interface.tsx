@@ -237,7 +237,7 @@ export function ChatInterface() {
                               {copiedId === `${message.id}-${idx}` ? 'Copied' : <Copy size={14} />}
                             </button>
                             <SyntaxHighlighter
-                              language={part.language}
+                              language={part.type === 'code' ? part.language : 'typescript'}
                               style={vscDarkPlus}
                               customStyle={{ borderRadius: '0.75rem', padding: '1.25rem' }}
                             >
