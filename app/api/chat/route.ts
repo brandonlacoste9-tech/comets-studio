@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
 import { auth } from '@/app/(auth)/auth'
 import {
   createChatOwnership,
@@ -12,7 +11,7 @@ import {
   anonymousEntitlements,
 } from '@/lib/entitlements'
 import { ChatSDKError } from '@/lib/errors'
-
+import { aiService } from '@/lib/ai-service'
 
 function getClientIP(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for')
@@ -24,17 +23,14 @@ function getClientIP(request: NextRequest): string {
 
 export async function POST(request: NextRequest) {
   try {
-        // Initialize DeepSeek client
-    const deepseek = new OpenAI({
-      baseURL: 'https://api.deepseek.com',
-      apiKey: process.env.DEEPSEEK_API_KEY || 'placeholder',
-    })
-
     const session = await auth()
-    const { message, chatId, streaming } = await request.json()
+    const { message, chatId, streaming, provider, model, temperature } = await request.json()
+    
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 })
     }
+
+    // Rate limiting check
     if (session?.user?.id) {
       const chatCount = await getChatCountByUserId({ userId: session.user.id, differenceInHours: 24 })
       if (chatCount >= entitlementsByUserType[session.user.type].maxMessagesPerDay) {
@@ -47,17 +43,71 @@ export async function POST(request: NextRequest) {
         return new ChatSDKError('rate_limit:chat').toResponse()
       }
     }
+
     const systemPrompt = 'You are an expert UI/UX designer and full-stack developer. Generate clean, modern React components using Tailwind CSS and Next.js best practices.'
-    const messages = [{ role: 'system', content: systemPrompt }, { role: 'user', content: message }]
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: message }
+    ]
+
     if (streaming) {
-      const stream = await deepseek.chat.completions.create({ model: 'deepseek-chat', messages: messages as any, stream: true, temperature: 0.7, max_tokens: 4096 })
+      const stream = await aiService.streamChatCompletion(messages as any, {
+        provider: provider || 'deepseek',
+        model: model,
+        temperature: temperature || 0.7,
+      })
+
       const encoder = new TextEncoder()
-      const readableStream = new ReadableStream({ async start(controller) { try { for await (const chunk of stream) { const content = chunk.choices[0]?.delta?.content || ''; if (content) controller.enqueue(encoder.encode(JSON.stringify({ content }) + '\n')) } controller.close() } catch (error) { controller.error(error) } } })
-      return new Response(readableStream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' } })
+      const reader = stream.getReader()
+
+      const readableStream = new ReadableStream({
+        async start(controller) {
+          try {
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) break
+              
+              const content = new TextDecoder().decode(value)
+              controller.enqueue(encoder.encode(JSON.stringify({ content }) + '\n'))
+            }
+            controller.close()
+          } catch (error) {
+            controller.error(error)
+          }
+        }
+      })
+
+      return new Response(readableStream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      })
     }
-    const completion = await deepseek.chat.completions.create({ model: 'deepseek-chat', messages: messages as any, temperature: 0.7, max_tokens: 4096 })
-    const responseMessage = completion.choices[0]?.message?.content || ''
+
+    // Non-streaming fallback (using deepseek by default for now as per original code logic)
+    // but we'll use the service for consistency
+    const stream = await aiService.streamChatCompletion(messages as any, {
+      provider: provider || 'deepseek',
+      model: model,
+      temperature: temperature || 0.7,
+      stream: false
+    })
+    
+    // Note: The aiService currently only returns a ReadableStream. 
+    // In a real scenario, non-streaming would return the full response.
+    // For simplicity here, we'll just read the stream if non-streaming is requested.
+    const reader = stream.getReader()
+    let responseMessage = ''
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      responseMessage += new TextDecoder().decode(value)
+    }
+
     const generatedChatId = chatId || `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    
     if (!chatId) {
       try {
         if (session?.user?.id) {
@@ -65,11 +115,23 @@ export async function POST(request: NextRequest) {
         } else {
           await createAnonymousChatLog({ ipAddress: getClientIP(request), v0ChatId: generatedChatId })
         }
-      } catch (error) { console.error('Failed to create chat ownership/log:', error) }
+      } catch (error) {
+        console.error('Failed to create chat ownership/log:', error)
+      }
     }
-    return NextResponse.json({ id: generatedChatId, messages: [{ role: 'user', content: message, id: `msg-${Date.now()}-1`, createdAt: new Date().toISOString() }, { role: 'assistant', content: responseMessage, id: `msg-${Date.now()}-2`, createdAt: new Date().toISOString() }] })
+
+    return NextResponse.json({
+      id: generatedChatId,
+      messages: [
+        { role: 'user', content: message, id: `msg-${Date.now()}-1`, createdAt: new Date().toISOString() },
+        { role: 'assistant', content: responseMessage, id: `msg-${Date.now()}-2`, createdAt: new Date().toISOString() }
+      ]
+    })
   } catch (error) {
-    console.error('DeepSeek API Error:', error)
-    return NextResponse.json({ error: 'Failed to process request', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 })
+    console.error('API Error:', error)
+    return NextResponse.json({
+      error: 'Failed to process request',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }

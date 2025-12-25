@@ -4,6 +4,7 @@
  * - DeepSeek V3 (primary)
  * - OpenAI (GPT-4)
  * - Anthropic Claude
+ * - Perplexity (Comet with web search)
  * 
  * Features:
  * - Streaming responses with SSE
@@ -14,7 +15,7 @@
 
 import OpenAI from 'openai';
 
-export type AIProvider = 'deepseek' | 'openai' | 'claude';
+export type AIProvider = 'deepseek' | 'openai' | 'claude' | 'perplexity';
 
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant';
@@ -39,6 +40,7 @@ export interface AIGenerationMetadata {
 class AIService {
   private deepseekClient: OpenAI | null = null;
   private openaiClient: OpenAI | null = null;
+  private perplexityClient: OpenAI | null = null;
 
   constructor() {
     // Initialize clients lazily to avoid module-level errors
@@ -63,6 +65,17 @@ class AIService {
     return this.openaiClient;
   }
 
+  private getPerplexityClient(): OpenAI {
+    if (!this.perplexityClient) {
+      const apiKey = process.env.PERPLEXITY_API_KEY || 'sk-placeholder';
+      this.perplexityClient = new OpenAI({
+        apiKey,
+        baseURL: 'https://api.perplexity.ai',
+      });
+    }
+    return this.perplexityClient;
+  }
+
   /**
    * Stream a chat completion from the selected AI provider
    */
@@ -72,13 +85,36 @@ class AIService {
   ): Promise<ReadableStream<Uint8Array>> {
     const {
       provider = 'deepseek',
-      model = provider === 'deepseek' ? 'deepseek-chat' : 'gpt-4-turbo-preview',
       temperature = 0.7,
       maxTokens = 4096,
       stream = true,
     } = options;
 
-    const client = provider === 'deepseek' ? this.getDeepSeekClient() : this.getOpenAIClient();
+    let client: OpenAI;
+    let model: string;
+
+    switch (provider) {
+      case 'perplexity':
+        client = this.getPerplexityClient();
+        model = options.model || 'llama-3.1-sonar-large-128k-online';
+        break;
+      case 'openai':
+        client = this.getOpenAIClient();
+        model = options.model || 'gpt-4-turbo-preview';
+        break;
+      case 'claude':
+        // Note: Currently using OpenAI client for Claude if it's via a proxy, 
+        // or this might need a separate Anthropic client. 
+        // For now, following the pattern of the existing code which was using OpenAI client.
+        client = this.getOpenAIClient();
+        model = options.model || 'claude-3-5-sonnet-20241022';
+        break;
+      case 'deepseek':
+      default:
+        client = this.getDeepSeekClient();
+        model = options.model || 'deepseek-chat';
+        break;
+    }
 
     // Create streaming completion
     const completion = await client.chat.completions.create({
