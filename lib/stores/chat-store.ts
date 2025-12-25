@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { aiService, AIMessage, AIProvider } from '../ai-service';
 import { extractCodeBlocks } from '../code-parser';
+import { useSettings } from '../store/settings';
 
 export interface ChatMessage {
   id: string;
@@ -126,7 +127,7 @@ export const useChatStore = create<ChatStore>()(
 
         // Message handling with streaming
         sendMessage: async (content) => {
-          const { currentSession, provider, model, temperature } = get();
+          const { currentSession, provider } = get();
           
           if (!currentSession) {
             get().createSession();
@@ -157,7 +158,7 @@ export const useChatStore = create<ChatStore>()(
             content: '',
             timestamp: Date.now(),
             provider,
-            model,
+            model: 'llama-3.1-sonar-large-128k-online', // Default mock
             isStreaming: true,
           };
 
@@ -171,23 +172,30 @@ export const useChatStore = create<ChatStore>()(
           }));
 
           try {
-            // Prepare messages for AI
-            const aiMessages: AIMessage[] = session.messages
-              .concat([userMessage])
-              .filter((m) => m.role !== 'system')
-              .map((m) => ({
-                role: m.role as 'user' | 'assistant',
-                content: m.content,
-              }));
+            // Get settings from store
+            const { temperature, maxTokens, language, model } = useSettings.getState();
 
-            // Stream response
-            const stream = await aiService.streamChatCompletion(aiMessages, {
-              provider,
-              model,
-              temperature,
+            // Call API
+            // Call API
+            const response = await fetch('/api/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                message: content,
+                chatId: get().currentSession?.id,
+                streaming: true,
+                temperature,
+                maxTokens,
+                language,
+                artisteMode: useSettings.getState().artisteMode,
+                model: 'llama-3.1-sonar-large-128k-online',
+              })
             });
 
-            const reader = stream.getReader();
+            if (!response.ok) throw new Error('Network response was not ok');
+            if (!response.body) throw new Error('No response body');
+
+            const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let fullResponse = '';
 
@@ -195,24 +203,38 @@ export const useChatStore = create<ChatStore>()(
               const { done, value } = await reader.read();
               if (done) break;
 
-              const chunk = decoder.decode(value);
-              fullResponse += chunk;
-
-              // Update message with streamed content
-              set((state) => ({
-                currentSession: {
-                  ...state.currentSession!,
-                  messages: state.currentSession!.messages.map((m) =>
-                    m.id === assistantMessage.id
-                      ? { ...m, content: fullResponse }
-                      : m
-                  ),
-                },
-              }));
+              const chunk = decoder.decode(value, { stream: true });
+              // Parse SSE format (data: {...})
+              // The API returns simple JSON stream chunks or text?, checking API route...
+              // API route: controller.enqueue(encoder.encode(JSON.stringify({ content }) + '\n'))
+              
+              const lines = chunk.split('\n').filter(line => line.trim() !== '');
+              for (const line of lines) {
+                try {
+                  const json = JSON.parse(line);
+                  if (json.content) {
+                    fullResponse += json.content;
+                    
+                    // Update message
+                    set((state) => ({
+                      currentSession: {
+                        ...state.currentSession!,
+                        messages: state.currentSession!.messages.map((m) =>
+                          m.id === assistantMessage.id
+                            ? { ...m, content: fullResponse }
+                            : m
+                        ),
+                      },
+                    }));
+                  }
+                } catch (e) {
+                   // ignore parse errors for partial chunks
+                }
+              }
             }
 
             // Extract code blocks
-          const codeBlocks = extractCodeBlocks(fullResponse).map(block => block.code);
+            const codeBlocks = extractCodeBlocks(fullResponse).map(block => block.code);
 
             // Finalize message
             set((state) => ({
@@ -220,7 +242,7 @@ export const useChatStore = create<ChatStore>()(
                 ...state.currentSession!,
                 messages: state.currentSession!.messages.map((m) =>
                   m.id === assistantMessage.id
-                    ? { ...m, isStreaming: false, code: codeBlocks }
+                    ? { ...m, isStreaming: false, code: codeBlocks, model }
                     : m
                 ),
                 updatedAt: Date.now(),

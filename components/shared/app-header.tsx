@@ -10,70 +10,36 @@ import { UserNav } from '@/components/user-nav'
 import { Button } from '@/components/ui/button'
 import { VercelIcon, GitHubIcon } from '@/components/ui/icons'
 import { DEPLOY_URL } from '@/lib/constants'
-import { Info } from 'lucide-react'
+import { Info, Settings } from 'lucide-react'
+import { SettingsPanel } from '@/components/settings-panel'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-
-interface AppHeaderProps {
-  className?: string
-}
-
-// Component that uses useSearchParams - needs to be wrapped in Suspense
-function SearchParamsHandler() {
-  const searchParams = useSearchParams()
-  const { update } = useSession()
-
-  // Force session refresh when redirected after auth
-  useEffect(() => {
-    const shouldRefresh = searchParams.get('refresh') === 'session'
-
-    if (shouldRefresh) {
-      // Force session update
-      update()
-
-      // Clean up URL without causing navigation
-      const url = new URL(window.location.href)
-      url.searchParams.delete('refresh')
-      window.history.replaceState({}, '', url.pathname)
-    }
-  }, [searchParams, update])
-
-  return null
-}
 
 export function AppHeader({ className = '' }: AppHeaderProps) {
   const pathname = usePathname()
   const { data: session } = useSession()
   const isHomepage = pathname === '/'
   const [isInfoDialogOpen, setIsInfoDialogOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
-  // Handle logo click - reset UI if on homepage, otherwise navigate to homepage
-  const handleLogoClick = (e: React.MouseEvent) => {
-    if (isHomepage) {
-      e.preventDefault()
-      // Add reset parameter to trigger UI reset
-      window.location.href = '/?reset=true'
-    }
-    // If not on homepage, let the Link component handle navigation normally
-  }
+  // ... (handleLogoClick)
 
   return (
     <div
       className={`${!isHomepage ? 'border-b border-border dark:border-input' : ''} ${className}`}
     >
-      {/* Handle search params with Suspense boundary */}
+      {/* ... (SearchParamsHandler) */}
       <Suspense fallback={null}>
         <SearchParamsHandler />
       </Suspense>
 
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Left side - Logo and Selector */}
+          {/* ... (Logo and Selector) */}
           <div className="flex items-center gap-4">
             <Link
               href="/"
@@ -82,14 +48,26 @@ export function AppHeader({ className = '' }: AppHeaderProps) {
             >
               v0 Clone
             </Link>
-            {/* Hide ChatSelector on mobile */}
             <div className="hidden lg:block">
               <ChatSelector />
             </div>
           </div>
 
-          {/* Desktop right side - What's This, GitHub, Deploy, and User */}
           <div className="hidden lg:flex items-center gap-4">
+          <Link href="/pricing">
+             <Button variant="ghost" className="text-slate-300 hover:text-white hover:bg-white/10">
+              💎 Pricing
+            </Button>
+          </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsSettingsOpen(true)}
+            className="text-slate-300 hover:text-white hover:bg-white/10"
+          >
+            <Settings className="w-5 h-5" />
+          </Button>
+            
             <Button
               variant="outline"
               className="py-1.5 px-2 h-fit text-sm"
@@ -98,7 +76,8 @@ export function AppHeader({ className = '' }: AppHeaderProps) {
               <Info size={16} />
               What's This?
             </Button>
-            <Button
+            {/* ... (GitHub Button, Deploy Button, UserNav) */}
+             <Button
               variant="outline"
               className="py-1.5 px-2 h-fit text-sm"
               asChild
@@ -113,7 +92,6 @@ export function AppHeader({ className = '' }: AppHeaderProps) {
               </Link>
             </Button>
 
-            {/* Deploy with Vercel button - hidden on mobile */}
             <Button
               className="bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-zinc-50 dark:text-zinc-900 py-1.5 px-2 h-fit text-sm"
               asChild
@@ -126,16 +104,24 @@ export function AppHeader({ className = '' }: AppHeaderProps) {
             <UserNav session={session} />
           </div>
 
-          {/* Mobile right side - Only menu button and user avatar */}
           <div className="flex lg:hidden items-center gap-2">
+             <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSettingsOpen(true)}
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
             <UserNav session={session} />
             <MobileMenu onInfoDialogOpen={() => setIsInfoDialogOpen(true)} />
           </div>
         </div>
       </div>
 
-      {/* Info Dialog */}
+      <SettingsPanel open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+
       <Dialog open={isInfoDialogOpen} onOpenChange={setIsInfoDialogOpen}>
+        {/* ... (Info Dialog content) */}
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold mb-4">
@@ -156,7 +142,7 @@ export function AppHeader({ className = '' }: AppHeaderProps) {
               where users can enter text prompts and generate React components
               and applications using AI.
             </p>
-            <p>
+             <p>
               It's built with{' '}
               <a
                 href="https://nextjs.org"

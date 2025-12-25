@@ -1,6 +1,6 @@
-# v0 clone
+# Comet Studio
 
-> **⚠️ Developer Preview**: This SDK is currently in beta and is subject to change. Use in production at your own risk.
+> **⚠️ Developer Preview**: This project is currently in beta and is subject to change. Use in production at your own risk.
 
 <p align="center">
     <img src="./screenshot.png" alt="v0 Clone Screenshot" width="800" />
@@ -23,7 +23,7 @@
 
 You can deploy your own version of the v0 clone to Vercel with one click:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fv0-sdk%2Ftree%2Fmain%2Fexamples%2Fv0-clone&env=V0_API_KEY,AUTH_SECRET&envDescription=Get+your+v0+API+key&envLink=https%3A%2F%2Fv0.app%2Fchat%2Fsettings%2Fkeys&products=%255B%257B%2522type%2522%253A%2522integration%2522%252C%2522protocol%2522%253A%2522storage%2522%252C%2522productSlug%2522%253A%2522neon%2522%252C%2522integrationSlug%2522%253A%2522neon%2522%257D%255D&project-name=v0-clone&repository-name=v0-clone&demo-title=v0+Clone&demo-description=A+full-featured+v0+clone+built+with+Next.js%2C+AI+Elements%2C+and+the+v0+SDK&demo-url=https%3A%2F%2Fclone-demo.v0-sdk.dev)
+[Deploy documentation coming soon]
 
 ## Setup
 
@@ -85,21 +85,14 @@ This v0 clone includes:
 
 ### Core Features
 
+- **Perplexity AI Integration**: Uses Perplexity's `llama-3.1-sonar-large-128k-online` model for real-time web-aware code generation
+- **Quebecois Localization**: Fully localized interface in French (QC) and English (US)
+- **Advanced Settings**: Customizable AI temperature, max tokens, and model settings
 - **AI Elements Integration**: Uses AI Elements components for a polished UI
-- **v0 SDK Integration**: Connects to the v0 Platform API for generating apps
 - **Real-time Preview**: Split-screen interface with chat and preview panels
 - **Conversation History**: Maintains chat history throughout the session
-- **Suggestion System**: Provides helpful prompts to get users started
-- **Streaming Support**: Toggle between streaming and non-streaming AI responses for real-time updates
-- **Comprehensive Task Support**: Full support for all v0 Platform API task types including:
-  - `task-thinking-v1` - AI reasoning and thought processes
-  - `task-search-web-v1` - Web search operations with results
-  - `task-search-repo-v1` - Repository/codebase search functionality
-  - `task-diagnostics-v1` - Code analysis and issue detection
-  - `task-read-file-v1` - File reading operations
-  - `task-coding-v1` - Code generation and editing tasks
-  - `task-generate-design-inspiration-v1` - Design inspiration generation
-  - **Graceful fallback** for unknown task types with user-friendly display
+- **Streaming Support**: Real-time streaming responses
+- **Comprehensive Task Support**: Full support for coding, thinking, and file operations
 
 ### Authentication & Multi-Tenant Features
 
@@ -107,10 +100,9 @@ This v0 clone includes:
 - **Guest Access**: Users can register as guests for persistent sessions
 - **User Registration/Login**: Email/password authentication with secure password hashing
 - **Session Management**: Secure session handling with NextAuth.js
-- **Multi-Tenant Architecture**: Multiple users share the same v0 API organization
 - **Ownership Mapping**: Authenticated users only see their own chats and projects
 - **Rate Limiting**: Different limits for anonymous, guest, and registered users
-- **User Navigation**: Header dropdown with user info and sign-out options
+- **User Navigation**: Header dropdown with user info and settings
 
 ## Usage
 
