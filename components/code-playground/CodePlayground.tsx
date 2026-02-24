@@ -94,15 +94,17 @@ function ProjectEditor({
           template="react-ts"
           theme="light"
           files={sandpackFiles}
-          options={{
-            activeFile: activeFile as string,
-            showTabs: true,
-            showLineNumbers: true,
-            showInlineErrors: true,
-            wrapContent: true,
-            editorHeight: isFullscreen ? '85vh' : '400px',
-            layout: showPreview ? 'preview' : undefined,
-          }}
+          options={
+            {
+              activeFile,
+              showTabs: true,
+              showLineNumbers: true,
+              showInlineErrors: true,
+              wrapContent: true,
+              editorHeight: isFullscreen ? '85vh' : '400px',
+              layout: showPreview ? 'preview' : undefined,
+            } as any
+          }
           customSetup={{
             dependencies: { 'lucide-react': 'latest' },
           }}
@@ -114,15 +116,17 @@ function ProjectEditor({
           <Sandpack
             template="react-ts"
             theme="light"
-            options={{
-              activeFile: activeFile as string,
-              showTabs: true,
-              showLineNumbers: true,
-              showInlineErrors: true,
-              wrapContent: true,
-              editorHeight: isFullscreen ? '85vh' : '400px',
-              layout: showPreview ? 'preview' : undefined,
-            }}
+            options={
+              {
+                activeFile,
+                showTabs: true,
+                showLineNumbers: true,
+                showInlineErrors: true,
+                wrapContent: true,
+                editorHeight: isFullscreen ? '85vh' : '400px',
+                layout: showPreview ? 'preview' : undefined,
+              } as any
+            }
             customSetup={{
               dependencies: { 'lucide-react': 'latest' },
             }}
