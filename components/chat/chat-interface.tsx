@@ -7,7 +7,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useChatStore } from '@/lib/stores/chat-store';
-import { Send, Code2, Settings, Trash2, Copy, Sliders, Layout, FolderPlus, BookOpen } from 'lucide-react';
+import { Send, Code2, Settings, Trash2, Copy, Sliders, Layout, FolderPlus, BookOpen, Moon, Sun, Monitor } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import {
@@ -21,6 +21,7 @@ import { CodePlayground } from '@/components/code-playground/CodePlayground';
 import { TemplateGallery } from '@/components/template-gallery';
 import { NewProjectDialog } from '@/components/new-project-dialog';
 import { extractCodeBlocks } from '@/lib/code-parser';
+import { useThemeStore, applyTheme, type Theme } from '@/lib/stores/theme-store';
 
 export function ChatInterface() {
   const {
@@ -38,6 +39,8 @@ export function ChatInterface() {
     temperature,
     setTemperature,
   } = useChatStore();
+
+  const { theme, setTheme } = useThemeStore();
 
   const [input, setInput] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -103,7 +106,7 @@ export function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [currentSession?.messages]);
 
-  // Auto-show preview for template messages (single message with projectFiles)
+  // Auto-show preview for template messages or when AI generates a React component
   useEffect(() => {
     const msgs = currentSession?.messages ?? [];
     const templateMsg = msgs.find((m) => m.projectFiles);
@@ -111,8 +114,21 @@ export function ChatInterface() {
       const parts = parseMessage(templateMsg.content);
       const codeIdx = parts.findIndex((p) => p.type === 'code');
       if (codeIdx >= 0) setPreviewCodeId(`${templateMsg.id}-${codeIdx}`);
+      return;
+    }
+    // Auto-expand last assistant message with React component
+    const lastAssistant = [...msgs].reverse().find((m) => m.role === 'assistant' && !m.isStreaming);
+    if (lastAssistant) {
+      const parts = parseMessage(lastAssistant.content);
+      const idx = parts.findIndex((p) => p.type === 'code' && extractCodeBlocks(`\`\`\`tsx\n${p.content}\n\`\`\``).some((b) => b.hasReactComponent));
+      if (idx >= 0) setPreviewCodeId(`${lastAssistant.id}-${idx}`);
     }
   }, [currentSession?.messages]);
+
+  // Apply theme on mount (after persist rehydration)
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
 
   // Create initial session
   useEffect(() => {
@@ -191,7 +207,7 @@ export function ChatInterface() {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col h-screen bg-slate-50 relative">
+      <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 relative">
         {/* Template panel - slide over from right */}
         <NewProjectDialog
           open={showNewProject}
@@ -208,24 +224,26 @@ export function ChatInterface() {
         )}
 
         {/* Header */}
-        <div className="border-b border-gray-200 bg-white">
+        <div className="border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900">
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Code2 className="w-6 h-6 text-slate-700" />
+              <Code2 className="w-6 h-6 text-slate-700 dark:text-slate-300" />
               <div>
-                <h1 className="text-xl font-bold text-slate-900">
+                <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
                   Comet Studio
                 </h1>
-                <p className="text-xs text-slate-500">AI component workspace</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">AI component workspace</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <select
-                value={provider}
-                onChange={(e) => setProvider(e.target.value as any)}
-                className="px-3 py-2 rounded-lg bg-white border border-gray-200 text-sm text-slate-700 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 outline-none"
-              >
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Provider</span>
+                <select
+                  value={provider}
+                  onChange={(e) => setProvider(e.target.value as any)}
+                  className="px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 outline-none font-medium"
+                >
                 <option value="ollama">Ollama (Local)</option>
                 <option value="kimiclaw">Kimiclaw (OpenClaw)</option>
                 <option value="kimi">Kimi (Moonshot)</option>
@@ -234,12 +252,13 @@ export function ChatInterface() {
                 <option value="openai">GPT-4 Turbo</option>
                 <option value="claude">Claude 3.5</option>
               </select>
+              </div>
 
               {provider === 'ollama' && (
                 <select
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-white border border-gray-200 text-sm text-slate-700 focus:ring-2 focus:ring-slate-400 outline-none"
+                  className="px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-slate-400 outline-none"
                 >
                   {(Object.keys(OLLAMA_MODELS) as Array<keyof typeof OLLAMA_MODELS>).map((task) => (
                     <option key={task} value={OLLAMA_MODELS[task]}>
@@ -256,6 +275,24 @@ export function ChatInterface() {
                   )}
                 </select>
               )}
+
+              <div className="flex items-center gap-1 border-l border-gray-200 pl-3">
+                {(['light', 'dark', 'system'] as Theme[]).map((t) => (
+                  <Tooltip key={t}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setTheme(t)}
+                        className={`p-2 rounded-lg transition-all outline-none ${
+                          theme === t ? 'bg-slate-200 text-slate-900' : 'hover:bg-gray-100 text-slate-600'
+                        }`}
+                      >
+                        {t === 'light' ? <Sun className="w-4 h-4" /> : t === 'dark' ? <Moon className="w-4 h-4" /> : <Monitor className="w-4 h-4" />}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>{t === 'light' ? 'Light' : t === 'dark' ? 'Dark' : 'System'}</TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
 
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -310,7 +347,7 @@ export function ChatInterface() {
 
         {/* Settings Panel */}
         {showSettings && (
-          <div className="bg-white border-b border-gray-200">
+          <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800">
             <div className="max-w-5xl mx-auto px-6 py-4 space-y-4">
               <div className="flex items-center gap-4">
                 <Sliders className="w-4 h-4 text-slate-600" />
@@ -330,16 +367,27 @@ export function ChatInterface() {
         )}
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-8 bg-slate-50">
+        <div className="flex-1 overflow-y-auto px-6 py-8 bg-slate-50 dark:bg-slate-950">
           <div className="max-w-5xl mx-auto space-y-6">
             {!currentSession?.messages.length ? (
-              <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-20">
-                <div className="w-20 h-20 rounded-full bg-slate-200 flex items-center justify-center">
-                  <Code2 className="w-10 h-10 text-slate-600" />
+              <div className="flex flex-col items-center justify-center h-full text-center space-y-6 py-20">
+                <div className="w-20 h-20 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
+                  <Code2 className="w-10 h-10 text-slate-600 dark:text-slate-400" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-900 mb-2">Comet Studio</h2>
-                  <p className="text-slate-500">Generate clean React components with AI.</p>
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">Comet Studio</h2>
+                  <p className="text-slate-500 dark:text-slate-400 mb-6">Generate clean React components with AI.</p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {['A login form', 'A pricing table', 'A todo list', 'A dark mode toggle', 'A search bar with filters'].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setInput(s)}
+                        className="px-4 py-2 rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -351,8 +399,8 @@ export function ChatInterface() {
                   <div
                     className={`max-w-3xl rounded-xl px-6 py-4 shadow-sm ${
                       message.role === 'user'
-                        ? 'bg-slate-900 text-white'
-                        : 'bg-white border border-gray-200'
+                        ? 'bg-slate-900 dark:bg-slate-800 text-white'
+                        : 'bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700'
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-3">
@@ -364,7 +412,7 @@ export function ChatInterface() {
                     </div>
 
                     <div className={`space-y-4 leading-relaxed ${
-                      message.role === 'user' ? 'text-white' : 'text-slate-800'
+                      message.role === 'user' ? 'text-white' : 'text-slate-800 dark:text-slate-200'
                     }`}>
                       {parseMessage(message.content).map((part, idx) => (
                         part.type === 'text' ? (
@@ -391,7 +439,7 @@ export function ChatInterface() {
                               </button>
                               <button
                                 onClick={() => copyCode(part.content, `${message.id}-${idx}`)}
-                                className="opacity-0 group-hover:opacity-100 bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-xs transition-all text-slate-600"
+                                className="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-xs transition-all text-slate-600"
                               >
                                 {copiedId === `${message.id}-${idx}` ? 'Copied' : <Copy size={14} />}
                               </button>
@@ -441,7 +489,7 @@ export function ChatInterface() {
         </div>
 
         {/* Input */}
-        <div className="border-t border-gray-200 bg-white p-6">
+        <div className="border-t border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
           <div className="max-w-5xl mx-auto">
             <div className="relative flex items-end gap-3">
               <textarea
@@ -450,7 +498,7 @@ export function ChatInterface() {
                 onChange={handleTextareaChange}
                 onKeyDown={handleKeyDown}
                 placeholder="Describe a component..."
-                className="flex-1 px-6 py-4 rounded-xl bg-slate-50 border border-gray-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 outline-none resize-none"
+                className="flex-1 px-6 py-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 outline-none resize-none"
                 style={{ minHeight: '56px' }}
               />
               <button

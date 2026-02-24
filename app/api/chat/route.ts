@@ -12,6 +12,7 @@ import {
 } from '@/lib/entitlements'
 import { ChatSDKError } from '@/lib/errors'
 import { aiService } from '@/lib/ai-service'
+import { COMETS_STUDIO_SYSTEM_PROMPT } from '@/lib/system-prompt'
 
 function getClientIP(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for')
@@ -24,11 +25,21 @@ function getClientIP(request: NextRequest): string {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    const { message, chatId, streaming, provider, model, temperature } = await request.json()
+    const { message, chatId, streaming, provider, model, temperature, messages: history } = await request.json()
     
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 })
     }
+
+    // Build messages: system prompt + conversation history (last 20 msgs) + new user message
+    const recentHistory = Array.isArray(history)
+      ? history.filter((m: any) => m.role && m.content).slice(-20).map((m: any) => ({ role: m.role, content: m.content }))
+      : []
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+      { role: 'system', content: COMETS_STUDIO_SYSTEM_PROMPT },
+      ...recentHistory,
+      { role: 'user', content: message },
+    ]
 
     // Rate limiting check
     if (session?.user?.id) {
@@ -43,22 +54,6 @@ export async function POST(request: NextRequest) {
         return new ChatSDKError('rate_limit:chat').toResponse()
       }
     }
-
-    const systemPrompt = `You are a React expert. Generate clean, professional components using:
-- Tailwind CSS
-- Modern, minimal design
-- Neutral colors (slate, gray, zinc)
-- Lucide icons
-- Accessible (ARIA labels, focus states)
-- Responsive by default
-- TypeScript + proper types
-
-Design: Clean solid backgrounds, simple shadows, subtle borders. No glassmorphism or neon accents.
-When asked to build UI, always output complete, runnable code in \`\`\`tsx code blocks.`
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: message }
-    ]
 
     if (streaming) {
       const stream = await aiService.streamChatCompletion(messages as any, {

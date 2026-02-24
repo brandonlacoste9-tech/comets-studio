@@ -33,20 +33,19 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                  document.documentElement.classList.add('dark');
-                } else {
-                  document.documentElement.classList.remove('dark');
-                }
-                
-                // Listen for changes in system preference
-                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-                  if (e.matches) {
-                    document.documentElement.classList.add('dark');
-                  } else {
-                    document.documentElement.classList.remove('dark');
+                var stored = null;
+                try { stored = JSON.parse(localStorage.getItem('comets-theme') || '{}'); } catch(e) {}
+                var theme = stored?.state?.theme || 'system';
+                function apply() {
+                  if (theme === 'dark') document.documentElement.classList.add('dark');
+                  else if (theme === 'light') document.documentElement.classList.remove('dark');
+                  else {
+                    if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark');
+                    else document.documentElement.classList.remove('dark');
                   }
-                });
+                }
+                apply();
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() { if (theme === 'system') apply(); });
               })();
             `,
           }}
