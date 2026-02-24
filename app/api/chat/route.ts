@@ -24,11 +24,11 @@ function getClientIP(request: NextRequest): string {
 
 export async function POST(request: NextRequest) {
   try {
-    let session: Awaited<ReturnType<typeof auth>> = null
+    let session
     try {
       session = await auth()
     } catch {
-      // Auth optional for personal use
+      session = null
     }
     const { message, chatId, streaming, provider, model, temperature, messages: history } = await request.json()
     
