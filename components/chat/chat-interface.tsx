@@ -202,6 +202,7 @@ export function ChatInterface() {
   const handleClearMessages = () => {
     if (window.confirm('Are you sure you want to clear all messages?')) {
       clearMessages();
+      setInput('');
     }
   };
 
@@ -407,7 +408,7 @@ export function ChatInterface() {
                       <span className={`text-xs font-bold uppercase tracking-widest ${
                         message.role === 'user' ? 'text-slate-300' : 'text-slate-500'
                       }`}>
-                        {message.role === 'user' ? 'User' : `AI • ${message.provider}`}
+                        {message.role === 'user' ? 'User' : `AI • ${message.provider ? String(message.provider).charAt(0).toUpperCase() + String(message.provider).slice(1) : 'AI'}`}
                       </span>
                     </div>
 

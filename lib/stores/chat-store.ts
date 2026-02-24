@@ -86,6 +86,7 @@ export const useChatStore = create<ChatStore>()(
         },
 
         createSessionFromTemplate: (templateKey, template) => {
+          const { provider } = get();
           const mainCode = template.files[template.mainFile] || '';
           const content = `I've created a **${template.name}** project. Here's the main file:\n\n\`\`\`tsx\n${mainCode}\n\`\`\`\n\nYou can edit it, deploy, or export the full project.`;
           const assistantMessage: ChatMessage = {
@@ -93,7 +94,7 @@ export const useChatStore = create<ChatStore>()(
             role: 'assistant',
             content,
             timestamp: Date.now(),
-            provider: undefined,
+            provider,
             code: [mainCode],
             projectFiles: template.files,
           };
@@ -166,7 +167,16 @@ export const useChatStore = create<ChatStore>()(
               }),
             });
 
-            if (!response.ok) throw new Error('Failed to connect to AI');
+            if (!response.ok) {
+              let errMsg = 'Failed to connect to AI service.';
+              try {
+                const data = await response.json();
+                errMsg = data.error || data.details || errMsg;
+              } catch {
+                // ignore
+              }
+              throw new Error(errMsg);
+            }
 
             const reader = response.body?.getReader();
             const decoder = new TextDecoder();
@@ -213,13 +223,14 @@ export const useChatStore = create<ChatStore>()(
             }));
           } catch (error) {
             console.error('Chat error:', error);
+            const errText = error instanceof Error ? error.message : 'Failed to connect to AI service.';
             set((state) => ({
               isStreaming: false,
               streamingMessageId: null,
               currentSession: {
                 ...state.currentSession!,
                 messages: state.currentSession!.messages.map((m) =>
-                  m.id === assistantMessage.id ? { ...m, content: 'Error: Failed to connect to AI service.', isStreaming: false } : m
+                  m.id === assistantMessage.id ? { ...m, content: `Error: ${errText}`, isStreaming: false } : m
                 ),
               },
             }));

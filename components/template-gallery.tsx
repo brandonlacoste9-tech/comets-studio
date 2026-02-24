@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { TEMPLATE_LIST, type Template } from '@/lib/templates'
 import { CodePlayground } from '@/components/code-playground/CodePlayground'
-import { Copy, X, Layout } from 'lucide-react'
+import { Copy, X, Layout, Code2, Eye } from 'lucide-react'
 
 interface TemplateGalleryProps {
   onSelect?: (code: string) => void
@@ -13,6 +13,7 @@ interface TemplateGalleryProps {
 export function TemplateGallery({ onSelect, onClose }: TemplateGalleryProps) {
   const [selected, setSelected] = useState<Template | null>(null)
   const [copied, setCopied] = useState(false)
+  const [viewMode, setViewMode] = useState<'code' | 'preview'>('preview')
 
   const handleCopy = async (code: string) => {
     await navigator.clipboard.writeText(code)
@@ -69,7 +70,23 @@ export function TemplateGallery({ onSelect, onClose }: TemplateGalleryProps) {
           {selected ? (
             <>
               <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
-                <span className="text-sm font-medium text-slate-700">{selected.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-slate-700">{selected.name}</span>
+                  <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+                    <button
+                      onClick={() => setViewMode('code')}
+                      className={`px-2.5 py-1 text-xs font-medium flex items-center gap-1 ${viewMode === 'code' ? 'bg-slate-200 text-slate-900' : 'bg-white text-slate-600 hover:bg-gray-50'}`}
+                    >
+                      <Code2 className="w-3.5 h-3.5" /> Code
+                    </button>
+                    <button
+                      onClick={() => setViewMode('preview')}
+                      className={`px-2.5 py-1 text-xs font-medium flex items-center gap-1 ${viewMode === 'preview' ? 'bg-slate-200 text-slate-900' : 'bg-white text-slate-600 hover:bg-gray-50'}`}
+                    >
+                      <Eye className="w-3.5 h-3.5" /> Live Preview
+                    </button>
+                  </div>
+                </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleCopy(selected.code)}
@@ -92,7 +109,7 @@ export function TemplateGallery({ onSelect, onClose }: TemplateGalleryProps) {
                 <CodePlayground
                   code={selected.code}
                   language="tsx"
-                  showPreview={true}
+                  showPreview={viewMode === 'preview'}
                 />
               </div>
             </>

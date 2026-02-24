@@ -24,7 +24,12 @@ function getClientIP(request: NextRequest): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
+    let session: Awaited<ReturnType<typeof auth>> = null
+    try {
+      session = await auth()
+    } catch {
+      // Auth optional for personal use
+    }
     const { message, chatId, streaming, provider, model, temperature, messages: history } = await request.json()
     
     if (!message) {
@@ -41,18 +46,24 @@ export async function POST(request: NextRequest) {
       { role: 'user', content: message },
     ]
 
-    // Rate limiting check
-    if (session?.user?.id) {
-      const chatCount = await getChatCountByUserId({ userId: session.user.id, differenceInHours: 24 })
-      if (chatCount >= entitlementsByUserType[session.user.type].maxMessagesPerDay) {
-        return new ChatSDKError('rate_limit:chat').toResponse()
+    // Rate limiting (skip when DB unavailable - personal use)
+    try {
+      if (process.env.POSTGRES_URL) {
+        if (session?.user?.id) {
+          const chatCount = await getChatCountByUserId({ userId: session.user.id, differenceInHours: 24 })
+          if (chatCount >= entitlementsByUserType[session.user.type].maxMessagesPerDay) {
+            return new ChatSDKError('rate_limit:chat').toResponse()
+          }
+        } else {
+          const clientIP = getClientIP(request)
+          const chatCount = await getChatCountByIP({ ipAddress: clientIP, differenceInHours: 24 })
+          if (chatCount >= anonymousEntitlements.maxMessagesPerDay) {
+            return new ChatSDKError('rate_limit:chat').toResponse()
+          }
+        }
       }
-    } else {
-      const clientIP = getClientIP(request)
-      const chatCount = await getChatCountByIP({ ipAddress: clientIP, differenceInHours: 24 })
-      if (chatCount >= anonymousEntitlements.maxMessagesPerDay) {
-        return new ChatSDKError('rate_limit:chat').toResponse()
-      }
+    } catch (dbErr) {
+      console.warn('Rate limit check skipped (DB unavailable):', dbErr)
     }
 
     if (streaming) {
@@ -113,7 +124,7 @@ export async function POST(request: NextRequest) {
 
     const generatedChatId = chatId || `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     
-    if (!chatId) {
+    if (!chatId && process.env.POSTGRES_URL) {
       try {
         if (session?.user?.id) {
           await createChatOwnership({ v0ChatId: generatedChatId, userId: session.user.id })
@@ -134,9 +145,11 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('API Error:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    const isProviderError = /api|key|401|403|500|ECONNREFUSED|fetch/i.test(message)
     return NextResponse.json({
-      error: 'Failed to process request',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: isProviderError ? `AI provider error: ${message}` : 'Failed to process request',
+      details: message
     }, { status: 500 })
   }
 }
