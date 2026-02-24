@@ -249,7 +249,7 @@ export function ChatInterface() {
                   {ollamaModels.length > 0 && (
                     <>
                       <option disabled>—</option>
-                      {ollamaModels.filter((m) => !Object.values(OLLAMA_MODELS).includes(m)).map((m) => (
+                      {ollamaModels.filter((m) => !(Object.values(OLLAMA_MODELS) as string[]).includes(m)).map((m) => (
                         <option key={m} value={m}>{m}</option>
                       ))}
                     </>
