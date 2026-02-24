@@ -47,6 +47,17 @@ AUTH_SECRET=your-auth-secret-here
 
 # Database URL - PostgreSQL connection string
 POSTGRES_URL=postgresql://user:password@localhost:5432/comet_db
+
+# Optional: Kimi (Moonshot AI) - Get key at https://platform.moonshot.ai/console/api-keys
+MOONSHOT_API_KEY=your_moonshot_api_key_here
+
+# Optional: Kimiclaw (OpenClaw Gateway) - Local assistant with Kimi
+OPENCLAW_BASE_URL=http://127.0.0.1:18789/v1
+OPENCLAW_GATEWAY_TOKEN=your_gateway_token
+# Or use OPENCLAW_GATEWAY_PASSWORD if gateway.auth.mode is "password"
+
+# Optional: One-click Vercel deploy - Get token at https://vercel.com/account/tokens
+VERCEL_TOKEN=your_vercel_token
 ```
 
 ### Database Setup
@@ -72,6 +83,24 @@ pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to start chatting.
+
+### Kimiclaw (OpenClaw) Setup
+
+To use Kimiclaw in Comet Studio, enable the OpenAI-compatible endpoint in your OpenClaw config (`~/.openclaw/openclaw.json`):
+
+```json
+{
+  "gateway": {
+    "http": {
+      "endpoints": {
+        "chatCompletions": { "enabled": true }
+      }
+    }
+  }
+}
+```
+
+Then start the gateway (`openclaw gateway`) and set `OPENCLAW_GATEWAY_TOKEN` (or `OPENCLAW_GATEWAY_PASSWORD`) in your `.env`.
 
 ## Architecture
 

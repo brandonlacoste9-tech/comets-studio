@@ -1,0 +1,26 @@
+# Comets Studio – Cursor Rules
+
+## Project Overview
+Comets Studio is an AI-powered component and app builder. Local-first, private, with Ollama as the primary AI engine. Think "local v0" or "Replit-style templates."
+
+## Architecture
+- **Chat**: Zustand store (`lib/stores/chat-store.ts`), messages with optional `projectFiles`
+- **AI**: `lib/ai-service.ts` – multi-provider (Ollama, DeepSeek, Kimi, etc.)
+- **Templates**: `lib/templates.ts` (components), `lib/project-templates.ts` (full projects)
+- **Deploy/Export**: `lib/vercel-deploy.ts` – Vercel deploy, ZIP export (Replit-ready)
+- **Preview**: Sandpack in `components/code-playground/CodePlayground.tsx`
+
+## Key Conventions
+- **Design**: Slate/gray palette, no glassmorphism, Lucide icons, Tailwind
+- **Components**: Clean, minimal, accessible (ARIA, focus states)
+- **Code gen**: Always output runnable `tsx` in code blocks
+
+## File Tree
+- `components/file-tree.tsx` – sidebar for multi-file projects
+- `components/code-playground/CodePlayground.tsx` – Sandpack + FileTree when `projectFiles`
+- `components/chat/chat-interface.tsx` – main chat UI, template/project integration
+
+## When Adding Features
+- Use existing AI providers; add new ones in `lib/ai-service.ts`
+- Project templates go in `lib/project-templates.ts`
+- Deploy/export use `buildProjectFilesRaw` or `buildProjectFilesFromTemplate`

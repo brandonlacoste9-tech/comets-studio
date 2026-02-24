@@ -7,7 +7,7 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { extractCodeBlocks } from '../code-parser';
 
-export type AIProvider = 'deepseek' | 'openai' | 'claude' | 'perplexity';
+export type AIProvider = 'ollama' | 'kimi' | 'kimiclaw' | 'deepseek' | 'openai' | 'claude' | 'perplexity';
 
 export interface ChatMessage {
   id: string;
@@ -17,7 +17,9 @@ export interface ChatMessage {
   provider?: AIProvider;
   model?: string;
   isStreaming?: boolean;
-  code?: string[]; 
+  code?: string[];
+  /** Full project files (e.g. from template) for deploy/export */
+  projectFiles?: Record<string, string>;
 }
 
 export interface ChatSession {
@@ -38,6 +40,7 @@ interface ChatStore {
   temperature: number;
   
   createSession: (title?: string) => string;
+  createSessionFromTemplate: (templateKey: string, template: { name: string; mainFile: string; files: Record<string, string> }) => string;
   loadSession: (sessionId: string) => void;
   deleteSession: (sessionId: string) => void;
   updateSessionTitle: (sessionId: string, title: string) => void;
@@ -45,6 +48,7 @@ interface ChatStore {
   stopStreaming: () => void;
   clearMessages: () => void;
   deleteMessage: (messageId: string) => void;
+  updateMessageProjectFiles: (messageId: string, projectFiles: Record<string, string>) => void;
   setProvider: (provider: AIProvider) => void;
   setModel: (model: string) => void;
   setTemperature: (temperature: number) => void;
@@ -68,12 +72,38 @@ export const useChatStore = create<ChatStore>()(
         sessions: [],
         isStreaming: false,
         streamingMessageId: null,
-        provider: 'deepseek',
-        model: 'deepseek-chat',
+        provider: 'ollama',
+        model: 'deepseek-coder',
         temperature: 0.7,
 
         createSession: (title) => {
           const newSession = createNewSession(title);
+          set((state) => ({
+            sessions: [newSession, ...state.sessions],
+            currentSession: newSession,
+          }));
+          return newSession.id;
+        },
+
+        createSessionFromTemplate: (templateKey, template) => {
+          const mainCode = template.files[template.mainFile] || '';
+          const content = `I've created a **${template.name}** project. Here's the main file:\n\n\`\`\`tsx\n${mainCode}\n\`\`\`\n\nYou can edit it, deploy, or export the full project.`;
+          const assistantMessage: ChatMessage = {
+            id: generateId(),
+            role: 'assistant',
+            content,
+            timestamp: Date.now(),
+            provider: undefined,
+            code: [mainCode],
+            projectFiles: template.files,
+          };
+          const newSession: ChatSession = {
+            id: generateId(),
+            title: template.name,
+            messages: [assistantMessage],
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
           set((state) => ({
             sessions: [newSession, ...state.sessions],
             currentSession: newSession,
@@ -197,6 +227,18 @@ export const useChatStore = create<ChatStore>()(
         stopStreaming: () => set({ isStreaming: false, streamingMessageId: null }),
         clearMessages: () => set((state) => ({ currentSession: state.currentSession ? { ...state.currentSession, messages: [], updatedAt: Date.now() } : null })),
         deleteMessage: (messageId) => set((state) => ({ currentSession: state.currentSession ? { ...state.currentSession, messages: state.currentSession.messages.filter((m) => m.id !== messageId), updatedAt: Date.now() } : null })),
+        updateMessageProjectFiles: (messageId, projectFiles) =>
+          set((state) => ({
+            currentSession: state.currentSession
+              ? {
+                  ...state.currentSession,
+                  messages: state.currentSession.messages.map((m) =>
+                    m.id === messageId ? { ...m, projectFiles } : m
+                  ),
+                  updatedAt: Date.now(),
+                }
+              : null,
+          })),
         setProvider: (provider) => set({ provider }),
         setModel: (model) => set({ model }),
         setTemperature: (temperature) => set({ temperature }),

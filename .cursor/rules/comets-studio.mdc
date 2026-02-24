@@ -1,0 +1,28 @@
+---
+description: Comets Studio – AI component and app builder. Local-first, Ollama, project templates.
+globs: 
+alwaysApply: true
+---
+
+# Comets Studio
+
+## What It Is
+AI-powered component and full-app builder. Local-first (Ollama), multi-provider (DeepSeek, Kimi, etc.), with project templates, live preview, Vercel deploy, and ZIP export.
+
+## Key Paths
+- `lib/ai-service.ts` – AI providers
+- `lib/stores/chat-store.ts` – chat state, projectFiles
+- `lib/project-templates.ts` – full project starters
+- `lib/vercel-deploy.ts` – deploy + export
+- `components/code-playground/CodePlayground.tsx` – Sandpack + FileTree
+- `components/chat/chat-interface.tsx` – main UI
+
+## Design System
+- Slate/gray palette, no glassmorphism
+- Lucide icons, Tailwind, accessible (ARIA)
+
+## APIs
+- `POST /api/chat` – streaming chat
+- `POST /api/explain` – code explanation
+- `POST /api/deploy` – Vercel deploy
+- `POST /api/export` – ZIP export

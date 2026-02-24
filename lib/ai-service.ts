@@ -1,10 +1,13 @@
 /**
  * Comet Studio AI Service Layer
  * Supports streaming responses from multiple AI providers:
- * - DeepSeek V3 (primary)
+ * - Ollama (local, no API key)
+ * - DeepSeek V3 (primary cloud)
  * - OpenAI (GPT-4)
  * - Anthropic Claude
  * - Perplexity (Comet with web search)
+ * - Kimi (Moonshot AI)
+ * - Kimiclaw (OpenClaw gateway - local assistant with Kimi)
  * 
  * Features:
  * - Streaming responses with SSE
@@ -15,7 +18,7 @@
 
 import OpenAI from 'openai';
 
-export type AIProvider = 'deepseek' | 'openai' | 'claude' | 'perplexity';
+export type AIProvider = 'ollama' | 'kimi' | 'kimiclaw' | 'deepseek' | 'openai' | 'claude' | 'perplexity';
 
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant';
@@ -38,12 +41,54 @@ export interface AIGenerationMetadata {
 }
 
 class AIService {
+  private ollamaClient: OpenAI | null = null;
+  private kimiClient: OpenAI | null = null;
+  private kimiclawClient: OpenAI | null = null;
   private deepseekClient: OpenAI | null = null;
   private openaiClient: OpenAI | null = null;
   private perplexityClient: OpenAI | null = null;
 
   constructor() {
     // Initialize clients lazily to avoid module-level errors
+  }
+
+  private getOllamaClient(): OpenAI {
+    if (!this.ollamaClient) {
+      const baseURL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1';
+      this.ollamaClient = new OpenAI({
+        baseURL,
+        apiKey: 'ollama', // Ollama doesn't require a real key
+      });
+    }
+    return this.ollamaClient;
+  }
+
+  private getKimiClient(): OpenAI {
+    if (!this.kimiClient) {
+      const apiKey = process.env.MOONSHOT_API_KEY || 'sk-placeholder';
+      this.kimiClient = new OpenAI({
+        apiKey,
+        baseURL: 'https://api.moonshot.ai/v1',
+      });
+    }
+    return this.kimiClient;
+  }
+
+  /**
+   * Kimiclaw via OpenClaw Gateway - OpenAI-compatible endpoint.
+   * Requires: openclaw gateway with chatCompletions enabled.
+   * Auth: OPENCLAW_GATEWAY_TOKEN or OPENCLAW_GATEWAY_PASSWORD
+   */
+  private getKimiclawClient(): OpenAI {
+    if (!this.kimiclawClient) {
+      const baseURL = process.env.OPENCLAW_BASE_URL || process.env.KIMICLAW_BASE_URL || 'http://127.0.0.1:18789/v1';
+      const apiKey = process.env.OPENCLAW_GATEWAY_TOKEN || process.env.OPENCLAW_GATEWAY_PASSWORD || 'openclaw';
+      this.kimiclawClient = new OpenAI({
+        baseURL,
+        apiKey,
+      });
+    }
+    return this.kimiclawClient;
   }
 
   private getDeepSeekClient(): OpenAI {
@@ -94,6 +139,18 @@ class AIService {
     let model: string;
 
     switch (provider) {
+      case 'ollama':
+        client = this.getOllamaClient();
+        model = options.model || 'llama3.2';
+        break;
+      case 'kimi':
+        client = this.getKimiClient();
+        model = options.model || 'kimi-k2-turbo-preview';
+        break;
+      case 'kimiclaw':
+        client = this.getKimiclawClient();
+        model = options.model || 'openclaw:main';
+        break;
       case 'perplexity':
         client = this.getPerplexityClient();
         model = options.model || 'llama-3.1-sonar-large-128k-online';
@@ -159,11 +216,13 @@ class AIService {
 Your task is to generate high-quality, production-ready code that follows best practices:
 - Write clean, idiomatic React code with TypeScript
 - Use modern React patterns (hooks, functional components)
+- Modern, minimal design with neutral colors (slate, gray, zinc)
+- Lucide icons, accessible (ARIA labels, focus states)
 - Include proper type definitions
 - Follow accessibility standards (WCAG)
-- Add inline comments for complex logic
 - Use Tailwind CSS for styling
 - Generate responsive, mobile-first designs
+- Clean solid backgrounds, simple shadows, subtle borders (no glassmorphism)
 ${context ? `\n\nProject Context:\n${context}` : ''}`
     };
 

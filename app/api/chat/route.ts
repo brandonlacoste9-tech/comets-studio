@@ -44,7 +44,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const systemPrompt = 'You are an expert UI/UX designer and full-stack developer. Generate clean, modern React components using Tailwind CSS and Next.js best practices.'
+    const systemPrompt = `You are a React expert. Generate clean, professional components using:
+- Tailwind CSS
+- Modern, minimal design
+- Neutral colors (slate, gray, zinc)
+- Lucide icons
+- Accessible (ARIA labels, focus states)
+- Responsive by default
+- TypeScript + proper types
+
+Design: Clean solid backgrounds, simple shadows, subtle borders. No glassmorphism or neon accents.
+When asked to build UI, always output complete, runnable code in \`\`\`tsx code blocks.`
     const messages = [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: message }

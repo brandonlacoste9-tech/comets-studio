@@ -1,0 +1,19 @@
+---
+description: AI features – chat, explain, code generation
+globs: ["**/api/**/*.ts", "**/ai-service*.ts", "**/chat*.tsx"]
+---
+
+# AI Features
+
+## Providers (lib/ai-service.ts)
+- ollama, kimi, kimiclaw, deepseek, openai, claude, perplexity
+
+## Chat
+- System prompt: React expert, Tailwind, minimal design
+- Streaming via SSE
+- Provider/model from chat store
+
+## Explain
+- `POST /api/explain` – { code, language, provider?, model? }
+- Returns { explanation }
+- Uses same aiService, temp 0.3
