@@ -48,7 +48,7 @@ export function ChatInterface() {
     if (provider !== 'grok' && provider !== 'grok-build') {
       setProvider('grok-build');
     }
-  }, []);
+  }, [provider, setProvider]);
 
   const [input, setInput] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -502,7 +502,7 @@ export function ChatInterface() {
               </div>
             </div>
             <div className="text-xs px-2 py-0.5 bg-slate-800 rounded border border-slate-700 text-orange-400/80">
-              {isAccelerationMode ? 'ACCELERATION MODE' : 'NOMINAL'} {fullAgenticMode ? '\u2022 FULL AGENTIC' : ''} {is42Mode ? '\u2022 42' : ''}
+              {isAccelerationMode ? 'ACCELERATION MODE' : 'NOMINAL'} {fullAgenticMode ? '• FULL AGENTIC' : ''} {is42Mode ? '• 42' : ''}
             </div>
           </div>
 
@@ -540,7 +540,7 @@ export function ChatInterface() {
               }}
               className="px-3 py-1 bg-slate-800 hover:bg-orange-500/20 rounded text-xs border border-slate-700"
             >
-              \u2318 PALETTE
+              ⌘ PALETTE
             </button>
             <button onClick={() => setInput('Run full build + truth audit + first-principles review')} className="px-3 py-1 bg-emerald-900 hover:bg-emerald-800 rounded text-xs">RUN + AUDIT</button>
             <button onClick={() => setInput('Deploy this to production like Elon ships a Starship')} className="px-3 py-1 bg-orange-600 hover:bg-orange-500 rounded text-xs text-white">SHIP IT</button>
@@ -557,7 +557,7 @@ export function ChatInterface() {
         {/* Original header content now IDE status bar */}
         <div className="border-b border-slate-800 bg-slate-900 px-4 py-1 text-[10px] flex items-center justify-between text-orange-400/70">
           <div className="flex items-center gap-4">
-            <span>PROJECT: ${currentSession?.title || 'Untitled'} • {activeProjectFiles ? Object.keys(activeProjectFiles).length : 0} FILES</span>
+            <span>PROJECT: {currentSession?.title || 'Untitled'} • {activeProjectFiles ? Object.keys(activeProjectFiles).length : 0} FILES</span>
             <span className="text-emerald-400">LIVE PREVIEW SYNCED</span>
             {fullAgenticMode && <span className="text-red-400 animate-pulse">AGENT IN CONTROL</span>}
           </div>
@@ -819,7 +819,7 @@ export function ChatInterface() {
                   <div className="flex text-[10px] border-b border-slate-700 mb-1 bg-slate-950">
                     {Object.keys(activeProjectFiles).slice(0, 6).map((p, idx) => (
                       <div key={idx} className="px-3 py-1 border-r border-slate-700 bg-slate-900 text-orange-400/80 cursor-pointer hover:bg-slate-800">
-                        {p.split('/').pop()} {idx === 0 && '\u2022 active'}
+                        {p.split('/').pop()} {idx === 0 && '• active'}
                       </div>
                     ))}
                     <div className="px-2 py-1 text-orange-500/50">Grok knows every symbol, ref, and dependency</div>
