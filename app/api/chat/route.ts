@@ -12,7 +12,7 @@ import {
 } from '@/lib/entitlements'
 import { ChatSDKError } from '@/lib/errors'
 import { aiService } from '@/lib/ai-service'
-import { COMETS_STUDIO_SYSTEM_PROMPT } from '@/lib/system-prompt'
+import { GROK_STUDIO_SYSTEM_PROMPT, buildProjectContext } from '@/lib/system-prompt'
 
 function getClientIP(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for')
@@ -30,21 +30,13 @@ export async function POST(request: NextRequest) {
     } catch {
       session = null
     }
-    const { message, chatId, streaming, provider, model, temperature, messages: history } = await request.json()
+    const { message, chatId, streaming, provider, model, temperature, messages: history, projectFiles } = await request.json()
     
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 })
     }
 
-    // Build messages: system prompt + conversation history (last 20 msgs) + new user message
-    const recentHistory = Array.isArray(history)
-      ? history.filter((m: any) => m.role && m.content).slice(-20).map((m: any) => ({ role: m.role, content: m.content }))
-      : []
-    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
-      { role: 'system', content: COMETS_STUDIO_SYSTEM_PROMPT },
-      ...recentHistory,
-      { role: 'user', content: message },
-    ]
+    const requestId = `${chatId || 'anon'}-${Date.now()}`
 
     // Rate limiting (skip when DB unavailable - personal use)
     try {
@@ -66,9 +58,20 @@ export async function POST(request: NextRequest) {
       console.warn('Rate limit check skipped (DB unavailable):', dbErr)
     }
 
+    // Build messages: system prompt + project context + history + new user message
+    const recentHistory = Array.isArray(history)
+      ? history.filter((m: any) => m.role && m.content).slice(-20).map((m: any) => ({ role: m.role, content: m.content }))
+      : []
+    const systemContent = GROK_STUDIO_SYSTEM_PROMPT + buildProjectContext(projectFiles)
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+      { role: 'system', content: systemContent },
+      ...recentHistory,
+      { role: 'user', content: message },
+    ]
+
     if (streaming) {
       const stream = await aiService.streamChatCompletion(messages as any, {
-        provider: provider || 'deepseek',
+        provider: provider || 'grok',
         model: model,
         temperature: temperature || 0.7,
       })
@@ -87,6 +90,18 @@ export async function POST(request: NextRequest) {
               controller.enqueue(encoder.encode(JSON.stringify({ content }) + '\n'))
             }
             controller.close()
+
+            if (process.env.POSTGRES_URL) {
+              try {
+                if (session?.user?.id) {
+                  await createChatOwnership({ v0ChatId: requestId, userId: session.user.id })
+                } else {
+                  await createAnonymousChatLog({ ipAddress: getClientIP(request), v0ChatId: requestId })
+                }
+              } catch (logErr) {
+                console.warn('Usage log skipped:', logErr)
+              }
+            }
           } catch (error) {
             controller.error(error)
           }
@@ -102,7 +117,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Non-streaming fallback (using deepseek by default for now as per original code logic)
+    // Non-streaming fallback (Grok default)
     // but we'll use the service for consistency
     const stream = await aiService.streamChatCompletion(messages as any, {
       provider: provider || 'deepseek',
