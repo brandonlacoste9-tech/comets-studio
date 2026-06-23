@@ -256,7 +256,7 @@ export function ChatInterface() {
 
       if (isLatest) {
         setCurrentAgentAction(`${type}...`);
-        setAgentLog(prev => [...prev, `\u26A1 ACTION: ${type} - ${details.slice(0,80)}...`]);
+        setAgentLog(prev => [...prev, `⚡ ACTION: ${type} - ${details.slice(0,80)}...`]);
       }
     }
 
@@ -278,7 +278,7 @@ export function ChatInterface() {
             updateMessageProjectFiles(latestProjectMessage.id, updatedFiles);
             
             // Trigger live refresh in preview
-            setAgentLog(prev => [...prev, `\uD83D\uDCDD ${type === 'CREATE_FILE' ? 'Created' : 'Edited'}: ${path} (live in preview)`]);
+            setAgentLog(prev => [...prev, `📝 ${type === 'CREATE_FILE' ? 'Created' : 'Edited'}: ${path} (live in preview)`]);
           }
         }
       } else if (type === 'IMAGINE_ASSET') {
@@ -286,7 +286,7 @@ export function ChatInterface() {
         if (descMatch) {
           const desc = descMatch[1].trim();
           // Simulate Grok Imagine - insert a badass placeholder
-          const imagineHtml = `\n<div className="relative w-full h-64 bg-gradient-to-br from-orange-950 via-black to-orange-900 flex items-center justify-center border border-orange-500/30 rounded-2xl overflow-hidden">\n  <div className="text-center">\n    <div className="text-6xl mb-2">\uD83E\uDE90</div>\n    <div className="text-orange-400 text-sm tracking-widest">GROK IMAGINE</div>\n    <div className="text-white mt-1 text-xs max-w-[280px] mx-auto opacity-80">${desc}</div>\n  </div>\n  <div className="absolute bottom-2 right-2 text-[10px] text-orange-500/60">xAI \u2022 42</div>\n</div>\n`;
+          const imagineHtml = `\n<div className="relative w-full h-64 bg-gradient-to-br from-orange-950 via-black to-orange-900 flex items-center justify-center border border-orange-500/30 rounded-2xl overflow-hidden">\n  <div className="text-center">\n    <div className="text-6xl mb-2">🪐</div>\n    <div className="text-orange-400 text-sm tracking-widest">GROK IMAGINE</div>\n    <div className="text-white mt-1 text-xs max-w-[280px] mx-auto opacity-80">${desc}</div>\n  </div>\n  <div className="absolute bottom-2 right-2 text-[10px] text-orange-500/60">xAI • 42</div>\n</div>\n`;
           
           if (activeProjectFiles && latestProjectMessage) {
             // Inject into main file if possible
@@ -299,13 +299,13 @@ export function ChatInterface() {
             }
             const updated = {...activeProjectFiles, [mainPath]: mainContent};
             updateMessageProjectFiles(latestProjectMessage.id, updated);
-            setAgentLog(prev => [...prev, `\uD83D\uDD84 Grok Imagine injected: ${desc.slice(0,50)}...`]);
+            setAgentLog(prev => [...prev, `🖼️ Grok Imagine injected: ${desc.slice(0,50)}...`]);
           }
         }
       } else if (type === 'RUN_ANALYSIS') {
-        setAgentLog(prev => [...prev, `\uD83D\uDDFC Running ${details}... Results: Looks solid but could be more ambitious.`]);
+        setAgentLog(prev => [...prev, `🔬 Running ${details}... Results: Looks solid but could be more ambitious.`]);
       } else if (type === 'DEPLOY') {
-        setAgentLog(prev => [...prev, `\uD83D\uDE80 Deploying to Vercel... (imagine green checkmark)`]);
+        setAgentLog(prev => [...prev, `🚀 Deploying to Vercel... (imagine green checkmark)`]);
         // Could trigger real deploy here
       }
     });
@@ -313,7 +313,7 @@ export function ChatInterface() {
     // REFLECTION
     const reflectMatch = content.match(/\*\*REFLECTION\*\*:?([\s\S]*?)(?=\*\*|$)/i);
     if (reflectMatch && isLatest) {
-      setAgentLog(prev => [...prev, `\uD83D\uDCAD ${reflectMatch[1].trim().slice(0,150)}...`]);
+      setAgentLog(prev => [...prev, `💭 ${reflectMatch[1].trim().slice(0,150)}...`]);
     }
 
     // If FULL AGENTIC and more to do, auto-continue (wild loop)
@@ -413,7 +413,7 @@ export function ChatInterface() {
             <button 
               onClick={() => {
                 setFullAgenticMode(!fullAgenticMode);
-                if (!fullAgenticMode) setAgentLog(prev => [...prev, '\uD83E\uDD16 FULL AGENTIC ENGAGED \u2014 Grok is now driving the IDE.']);
+                if (!fullAgenticMode) setAgentLog(prev => [...prev, '🤖 FULL AGENTIC ENGAGED — Grok is now driving the IDE.']);
               }}
               className={`px-3 py-1 rounded text-xs font-mono ${fullAgenticMode ? 'bg-red-600 text-white' : 'bg-slate-800 hover:bg-slate-700 border border-slate-700'}`}
             >
@@ -429,7 +429,7 @@ export function ChatInterface() {
               }}
               className="px-3 py-1 bg-slate-800 hover:bg-orange-500/20 rounded text-xs border border-slate-700"
             >
-              \u2328\uFE0F PALETTE
+              ⌘ PALETTE
             </button>
             <button onClick={() => setInput('Run full build + truth audit + first-principles review')} className="px-3 py-1 bg-emerald-900 hover:bg-emerald-800 rounded text-xs">RUN + AUDIT</button>
             <button onClick={() => setInput('Deploy this to production like Elon ships a Starship')} className="px-3 py-1 bg-orange-600 hover:bg-orange-500 rounded text-xs text-white">SHIP IT</button>
@@ -503,7 +503,7 @@ export function ChatInterface() {
             /* RIGHT / CENTER: The Project - main focus */
             <div className="flex flex-col h-full bg-black">
               <div className="h-8 px-4 flex items-center justify-between text-xs border-b border-slate-800 bg-slate-950 text-orange-400 flex-shrink-0">
-                <span>PROJECT PREVIEW \u2014 CENTER STAGE</span>
+                <span>PROJECT PREVIEW — CENTER STAGE</span>
                 {currentSession?.messages.some(m => m.projectFiles) && (
                   <span className="text-emerald-400 text-[10px]">LIVE & EDITABLE</span>
                 )}
@@ -514,7 +514,7 @@ export function ChatInterface() {
                 <div className="mx-2 mt-2 mb-1 rounded-xl border border-orange-500/40 bg-slate-950 p-3 text-xs flex-shrink-0">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2 text-orange-400 font-semibold tracking-wider text-[10px]">
-                      <span>\uD83E\uDDE0 GROK AGENT PLAN</span>
+                      <span>🧠 GROK AGENT PLAN</span>
                       <span className="px-1.5 py-0.5 bg-orange-500/10 rounded text-[8px] text-orange-300">FIRST PRINCIPLES</span>
                     </div>
                     <div className="flex gap-1">
@@ -552,7 +552,7 @@ export function ChatInterface() {
                         >
                           <span className={`font-mono text-orange-400/80 shrink-0 w-4 ${isApproved ? 'text-orange-400' : ''}`}>{idx+1}.</span>
                           <span className={isApproved ? 'text-white line-through opacity-60' : 'text-slate-200'}>{step}</span>
-                          <span className="ml-auto text-[10px] text-orange-400/60">{isApproved ? '\u2713 APPROVED' : 'click to approve'}</span>
+                          <span className="ml-auto text-[10px] text-orange-400/60">{isApproved ? '✓ APPROVED' : 'click to approve'}</span>
                         </div>
                       );
                     })}
@@ -569,7 +569,7 @@ export function ChatInterface() {
                       <button 
                         onClick={() => {
                           setFullAgenticMode(true);
-                          setAgentLog(prev => [...prev, '\uD83E\uDD16 FULL AGENTIC UNLEASHED. Grok now has the keys.']);
+                          setAgentLog(prev => [...prev, '🤖 FULL AGENTIC UNLEASHED. Grok now has the keys.']);
                           executeLivePlan();
                         }}
                         className="flex-1 text-[10px] py-1 bg-red-600 hover:bg-red-500 rounded font-bold text-white tracking-wider animate-pulse"
@@ -613,7 +613,7 @@ export function ChatInterface() {
                 <button onClick={() => {
                   const text = encodeURIComponent(`Just shipped something legendary in Grok Studio with @xai. First principles, no BS, ${isAccelerationMode ? 'full acceleration' : 'maximum truth'}. ${is42Mode ? '42.' : ''} `);
                   window.open(`https://x.com/intent/tweet?text=${text}`, '_blank');
-                }} className="px-2 py-0.5 bg-slate-800 hover:bg-blue-500/30 rounded text-blue-300 hover:text-white transition">POST TO \uD835\uDD4F</button>
+                }} className="px-2 py-0.5 bg-slate-800 hover:bg-blue-500/30 rounded text-blue-300 hover:text-white transition">POST TO 𝕏</button>
                 <button 
                   onClick={() => setInput('RUN TRUTH AUDIT on the current project: Be maximally truthful. Call out any bloat, lies, or non-first-principles decisions. Then suggest the brutal fixes. No sycophancy.')}
                   className="px-2 py-0.5 bg-red-900/60 hover:bg-red-500/40 rounded text-red-300 hover:text-white transition font-medium border border-red-500/30"
@@ -626,7 +626,7 @@ export function ChatInterface() {
                 {/* Grok is *extremely* advanced in IDE knowledge */}
                 {fullAgenticMode && (
                   <div className="mb-1 text-[9px] px-2 py-0.5 rounded bg-orange-500/10 border border-orange-500/30 text-orange-400">
-                    \uD83E\uDDE0 Grok IDE Mastery active: LSP + Semantic Tokens \u2022 Full Workspace Symbol Search \u2022 Structural Refactoring Engine \u2022 Debug Protocol \u2022 Call Hierarchy \u2022 Inlay Hints \u2022 First-Principles Analysis across entire project
+                    🧠 Grok IDE Mastery active: LSP + Semantic Tokens • Full Workspace Symbol Search • Structural Refactoring Engine • Debug Protocol • Call Hierarchy • Inlay Hints • First-Principles Analysis across entire project
                   </div>
                 )}
                 {/* Grok IDE Editor Tabs - showing Grok's deep IDE knowledge */}
@@ -657,7 +657,7 @@ export function ChatInterface() {
                   return (
                     <div className="h-full flex items-center justify-center grok-empty">
                       <div className="max-w-xs text-center">
-                        <div className="text-6xl mb-4 opacity-70">\uD83D\uDEF8</div>
+                        <div className="text-6xl mb-4 opacity-70">🛸</div>
                         <div className="text-xl font-semibold mb-2 tracking-[-1px]">This is your cockpit.</div>
                         <p className="text-sm text-slate-400">
                           Describe something ambitious. Grok will plan it, build it, and make it look like it belongs on Mars.
