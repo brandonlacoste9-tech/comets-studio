@@ -1,24 +1,17 @@
 /**
- * Comet Studio AI Service Layer
- * Supports streaming responses from multiple AI providers:
- * - Ollama (local, no API key)
- * - DeepSeek V3 (primary cloud)
- * - OpenAI (GPT-4)
- * - Anthropic Claude
- * - Perplexity (Comet with web search)
- * - Kimi (Moonshot AI)
- * - Kimiclaw (OpenClaw gateway - local assistant with Kimi)
- * 
- * Features:
- * - Streaming responses with SSE
- * - Multi-model support with fallback
- * - Context-aware code generation
- * - Semantic code understanding
+ * Grok Studio AI Service Layer
+ * Powered by xAI Grok models + multi-provider support:
+ * - Grok 4.3 (flagship xAI model)
+ * - Grok Build 0.1 (elite agentic coding specialist)
+ * - Ollama (local)
+ * - DeepSeek, Kimi, OpenAI, Claude, Perplexity, Kimiclaw
+ *
+ * All providers use the OpenAI-compatible SDK interface.
  */
 
 import OpenAI from 'openai';
 
-export type AIProvider = 'ollama' | 'kimi' | 'kimiclaw' | 'deepseek' | 'openai' | 'claude' | 'perplexity';
+export type AIProvider = 'grok' | 'grok-build' | 'ollama' | 'kimi' | 'kimiclaw' | 'deepseek' | 'openai' | 'claude' | 'perplexity';
 
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant';
@@ -47,6 +40,7 @@ class AIService {
   private deepseekClient: OpenAI | null = null;
   private openaiClient: OpenAI | null = null;
   private perplexityClient: OpenAI | null = null;
+  private grokClient: OpenAI | null = null;
 
   constructor() {
     // Initialize clients lazily to avoid module-level errors
@@ -122,6 +116,22 @@ class AIService {
   }
 
   /**
+   * xAI Grok — Official OpenAI-compatible endpoint.
+   * Key: XAI_API_KEY (get at https://console.x.ai)
+   * Models: grok-4.3 (smartest), grok-build-0.1 (coding specialist)
+   */
+  private getGrokClient(): OpenAI {
+    if (!this.grokClient) {
+      const apiKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY || 'sk-placeholder';
+      this.grokClient = new OpenAI({
+        apiKey,
+        baseURL: 'https://api.x.ai/v1',
+      });
+    }
+    return this.grokClient;
+  }
+
+  /**
    * Stream a chat completion from the selected AI provider
    */
   async streamChatCompletion(
@@ -129,7 +139,7 @@ class AIService {
     options: AIStreamOptions = {}
   ): Promise<ReadableStream<Uint8Array>> {
     const {
-      provider = 'deepseek',
+      provider = 'grok',
       temperature = 0.7,
       maxTokens = 4096,
       stream = true,
@@ -139,6 +149,14 @@ class AIService {
     let model: string;
 
     switch (provider) {
+      case 'grok':
+        client = this.getGrokClient();
+        model = options.model || 'grok-4.3';
+        break;
+      case 'grok-build':
+        client = this.getGrokClient();
+        model = options.model || 'grok-build-0.1';
+        break;
       case 'ollama':
         client = this.getOllamaClient();
         model = options.model || 'llama3.2';
@@ -160,9 +178,6 @@ class AIService {
         model = options.model || 'gpt-4-turbo-preview';
         break;
       case 'claude':
-        // Note: Currently using OpenAI client for Claude if it's via a proxy, 
-        // or this might need a separate Anthropic client. 
-        // For now, following the pattern of the existing code which was using OpenAI client.
         client = this.getOpenAIClient();
         model = options.model || 'claude-3-5-sonnet-20241022';
         break;
@@ -211,19 +226,15 @@ class AIService {
   ): Promise<ReadableStream<Uint8Array>> {
     const systemMessage: AIMessage = {
       role: 'system',
-      content: `You are an expert React/TypeScript developer and code generation assistant for Comet Studio.
+      content: `You are Grok, built by xAI — elite coding agent in Grok Studio.
 
-Your task is to generate high-quality, production-ready code that follows best practices:
-- Write clean, idiomatic React code with TypeScript
-- Use modern React patterns (hooks, functional components)
-- Modern, minimal design with neutral colors (slate, gray, zinc)
-- Lucide icons, accessible (ARIA labels, focus states)
-- Include proper type definitions
-- Follow accessibility standards (WCAG)
-- Use Tailwind CSS for styling
-- Generate responsive, mobile-first designs
-- Clean solid backgrounds, simple shadows, subtle borders (no glassmorphism)
-${context ? `\n\nProject Context:\n${context}` : ''}`
+Follow the full GROK_STUDIO_SYSTEM_PROMPT rules exactly:
+- shadcn/ui + Radix + Tailwind mastery
+- Beautiful, premium dark design with orange accents
+- Plan first internally, then perfect production code
+- Full TypeScript, modern React, lucide icons, accessible
+
+${context ? `Project Context:\n${context}` : ''}`
     };
 
     const userMessage: AIMessage = {
@@ -253,9 +264,9 @@ ${context ? `\n\nProject Context:\n${context}` : ''}`
       },
     ];
 
-    const client = this.getDeepSeekClient();
+    const client = this.getGrokClient();
     const completion = await client.chat.completions.create({
-      model: options.model || 'deepseek-chat',
+      model: options.model || 'grok-build-0.1',
       messages: messages as any,
       temperature: options.temperature || 0.3,
       max_tokens: options.maxTokens || 4096,
@@ -283,9 +294,9 @@ ${context ? `\n\nProject Context:\n${context}` : ''}`
       },
     ];
 
-    const client = this.getDeepSeekClient();
+    const client = this.getGrokClient();
     const completion = await client.chat.completions.create({
-      model: options.model || 'deepseek-chat',
+      model: options.model || 'grok-build-0.1',
       messages: messages as any,
       temperature: 0.3,
       max_tokens: 2048,
@@ -311,7 +322,7 @@ ${context ? `\n\nProject Context:\n${context}` : ''}`
     const messages: AIMessage[] = [
       {
         role: 'system',
-        content: 'You are an expert code reviewer with deep knowledge of best practices, performance, security, and accessibility.',
+        content: 'You are Grok, an expert code reviewer built by xAI. Be direct, precise and maximally helpful.',
       },
       {
         role: 'user',
@@ -319,9 +330,9 @@ ${context ? `\n\nProject Context:\n${context}` : ''}`
       },
     ];
 
-    const client = this.getDeepSeekClient();
+    const client = this.getGrokClient();
     const completion = await client.chat.completions.create({
-      model: 'deepseek-chat',
+      model: 'grok-4.3',
       messages: messages as any,
       temperature: 0.3,
       max_tokens: 2048,
