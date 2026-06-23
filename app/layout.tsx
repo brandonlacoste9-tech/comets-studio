@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'v0 Clone',
+  title: 'Grok IDE',
   description:
-    'A clone of v0.dev built with the v0 SDK - Generate and preview React components with AI',
+    'The IDE Grok and Elon would make. Full agentic, first-principles, truth-seeking development cockpit. xAI powered.',
 }
 
 export default function RootLayout({
@@ -34,7 +34,7 @@ export default function RootLayout({
             __html: `
               (function() {
                 var stored = null;
-                try { stored = JSON.parse(localStorage.getItem('comets-theme') || '{}'); } catch(e) {}
+                try { stored = JSON.parse(localStorage.getItem('grok-theme') || '{}'); } catch(e) {}
                 var theme = stored?.state?.theme || 'system';
                 function apply() {
                   if (theme === 'dark') document.documentElement.classList.add('dark');
