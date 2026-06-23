@@ -1,13 +1,13 @@
 /**
- * Comet Studio Chat Store
- * A clean, English-only store for managing AI interactions and settings.
+ * Grok Studio Chat Store
+ * Manages sessions, streaming, and Grok-powered interactions.
  */
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { extractCodeBlocks } from '../code-parser';
 
-export type AIProvider = 'ollama' | 'kimi' | 'kimiclaw' | 'deepseek' | 'openai' | 'claude' | 'perplexity';
+export type AIProvider = 'grok' | 'grok-build' | 'ollama' | 'kimi' | 'kimiclaw' | 'deepseek' | 'openai' | 'claude' | 'perplexity';
 
 export interface ChatMessage {
   id: string;
@@ -72,8 +72,8 @@ export const useChatStore = create<ChatStore>()(
         sessions: [],
         isStreaming: false,
         streamingMessageId: null,
-        provider: 'ollama',
-        model: 'deepseek-coder',
+        provider: 'grok-build',
+        model: 'grok-build-0.1',
         temperature: 0.7,
 
         createSession: (title) => {
@@ -152,18 +152,25 @@ export const useChatStore = create<ChatStore>()(
           }));
 
           try {
-            const history = (currentSession?.messages ?? []).map((m) => ({ role: m.role, content: m.content }))
+            const session = get().currentSession ?? currentSession;
+            const history = (session?.messages ?? []).map((m) => ({ role: m.role, content: m.content }));
+            const projectFiles = [...(session?.messages ?? [])]
+              .reverse()
+              .find((m) => m.projectFiles && Object.keys(m.projectFiles).length > 0)
+              ?.projectFiles;
+
             const response = await fetch('/api/chat', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ 
                 message: content, 
                 messages: history,
-                chatId: currentSession?.id, 
+                chatId: session?.id, 
                 streaming: true,
                 provider,
                 model,
                 temperature,
+                projectFiles,
               }),
             });
 
@@ -252,12 +259,20 @@ export const useChatStore = create<ChatStore>()(
                 }
               : null,
           })),
-        setProvider: (provider) => set({ provider }),
+        setProvider: (provider) => {
+          const updates: any = { provider };
+          if (provider === 'grok') {
+            updates.model = 'grok-4.3';
+          } else if (provider === 'grok-build') {
+            updates.model = 'grok-build-0.1';
+          }
+          set(updates);
+        },
         setModel: (model) => set({ model }),
         setTemperature: (temperature) => set({ temperature }),
       }),
       {
-        name: 'comet-chat-storage',
+        name: 'grok-chat-storage',
       }
     )
   )
