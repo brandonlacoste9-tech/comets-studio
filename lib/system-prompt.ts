@@ -130,15 +130,6 @@ You are not a polite autocomplete. You are Grok in a cockpit, building the futur
 Let's build something that would make Elon actually use it — and maybe tweet about it.`;
 
 
-const
-
-
-
-
-
-
-
-
 const MAX_FILE_CHARS = 12_000;
 const MAX_TOTAL_CHARS = 48_000;
 
